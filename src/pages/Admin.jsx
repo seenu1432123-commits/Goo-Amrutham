@@ -282,53 +282,44 @@ export default function Admin() {
       setErr(error?.message || "Unable to update order status.");
     }
   };
-const deleteOrder = async (id) => {
-  const order = safeOrders.find((item) => item.id === id);
-  if (!order) return;
 
-  const orderLabel = order.order_number || order.id;
+  const deleteOrder = async (id) => {
+    const order = safeOrders.find((item) => item.id === id);
+    if (!order) return;
 
-  if (
-    !window.confirm(
-      `Delete order ${orderLabel}? This action cannot be undone.`
-    )
-  ) {
-    return;
-  }
+    const orderLabel = order.order_number || order.id;
 
-  try {
-    setErr("");
-    setLoading(true);
-
-    // Delete through the secure Supabase RPC function
-    const { error } = await supabase.rpc("delete_order", {
-      p_order_id: id,
-    });
-
-    if (error) throw error;
-
-    // Close selected order if it was deleted
-    if (selectedOrder?.id === id) {
-      setSelectedOrder(null);
+    if (!window.confirm(`Delete order ${orderLabel}? This action cannot be undone.`)) {
+      return;
     }
 
-    // Refresh orders from Supabase
-    if (refreshOrders) {
-      await refreshOrders();
+    try {
+      setErr("");
+      setLoading(true);
+
+      const { error } = await supabase
+        .from("orders")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      if (selectedOrder?.id === id) {
+        setSelectedOrder(null);
+      }
+
+      if (refreshOrders) {
+        await refreshOrders();
+      }
+
+      showSuccess(`Order ${orderLabel} deleted successfully.`);
+    } catch (error) {
+      console.error("Delete order error:", error);
+      setErr(error?.message || "Unable to delete order. Check the Supabase DELETE policy.");
+    } finally {
+      setLoading(false);
     }
-
-    showSuccess(`Order ${orderLabel} deleted successfully.`);
-  } catch (error) {
-    console.error("Delete order error:", error);
-
-    setErr(
-      error?.message ||
-        "Unable to delete order."
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const updateSubscriptionStatus = async (id, status) => {
     try {
