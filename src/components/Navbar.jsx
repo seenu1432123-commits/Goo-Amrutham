@@ -43,16 +43,10 @@ export default function Navbar() {
       }
     };
 
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside
-    );
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside
-      );
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -86,14 +80,31 @@ export default function Navbar() {
 
   const navLinkClass = ({ isActive }) =>
     `nav-link fw-semibold px-3 ${
-      isActive
-        ? "text-success"
-        : "text-dark"
+      isActive ? "text-success" : "text-dark"
     }`;
+
+  /* =========================================
+     CLOSE MOBILE NAVBAR
+  ========================================= */
+
+  const closeMobileMenu = () => {
+    const navbar = document.getElementById("gooAmruthamNavbar");
+
+    if (navbar?.classList.contains("show")) {
+      const button = document.querySelector(
+        '[data-bs-target="#gooAmruthamNavbar"]'
+      );
+
+      if (button) {
+        button.click();
+      }
+    }
+
+    setProfileOpen(false);
+  };
 
   return (
     <nav className="navbar navbar-expand-lg navbar-light bg-white sticky-top border-bottom shadow-sm">
-
       <div className="container py-2">
 
         {/* =====================================
@@ -103,6 +114,7 @@ export default function Navbar() {
         <Link
           to="/"
           className="navbar-brand d-flex align-items-center gap-2"
+          onClick={closeMobileMenu}
         >
           <img
             src={logo}
@@ -123,7 +135,6 @@ export default function Navbar() {
           </div>
         </Link>
 
-
         {/* =====================================
             MOBILE MENU BUTTON
         ===================================== */}
@@ -140,7 +151,6 @@ export default function Navbar() {
           <FaBars size={22} />
         </button>
 
-
         {/* =====================================
             NAVBAR CONTENT
         ===================================== */}
@@ -154,82 +164,91 @@ export default function Navbar() {
               NAVIGATION LINKS
           =================================== */}
 
-          <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
+<ul className="navbar-nav mx-auto mb-2 mb-lg-0">
 
-            <li className="nav-item">
-              <NavLink
-                to="/"
-                className={navLinkClass}
-              >
-                Home
-              </NavLink>
-            </li>
+  <li className="nav-item">
+    <NavLink
+      to="/"
+      className={navLinkClass}
+      onClick={closeMobileMenu}
+    >
+      Home
+    </NavLink>
+  </li>
 
-            <li className="nav-item">
-              <NavLink
-                to="/products"
-                className={navLinkClass}
-              >
-                Our Milk
-              </NavLink>
-            </li>
+  <li className="nav-item">
+    <NavLink
+      to="/products"
+      className={navLinkClass}
+      onClick={closeMobileMenu}
+    >
+      Our Milk
+    </NavLink>
+  </li>
 
-            <li className="nav-item">
-              <NavLink
-                to="/about"
-                className={navLinkClass}
-              >
-                About
-              </NavLink>
-            </li>
+  <li className="nav-item">
+    <NavLink
+      to="/subscriptions"
+      className={navLinkClass}
+      onClick={closeMobileMenu}
+    >
+      My Subscriptions
+    </NavLink>
+  </li>
 
-            <li className="nav-item">
-              <NavLink
-                to="/contact"
-                className={navLinkClass}
-              >
-                Contact
-              </NavLink>
-            </li>
+  <li className="nav-item">
+    <NavLink
+      to="/about"
+      className={navLinkClass}
+      onClick={closeMobileMenu}
+    >
+      About
+    </NavLink>
+  </li>
 
-            {/* MY ORDERS */}
+  <li className="nav-item">
+    <NavLink
+      to="/contact"
+      className={navLinkClass}
+      onClick={closeMobileMenu}
+    >
+      Contact
+    </NavLink>
+  </li>
 
-            {currentUser && (
-              <li className="nav-item">
-                <NavLink
-                  to="/orders"
-                  className={navLinkClass}
-                >
-                  My Orders
-                </NavLink>
-              </li>
-            )}
+  {currentUser && (
+    <li className="nav-item">
+      <NavLink
+        to="/orders"
+        className={navLinkClass}
+        onClick={closeMobileMenu}
+      >
+        My Orders
+      </NavLink>
+    </li>
+  )}
 
-            {/* ADMIN */}
+  {currentUser?.role === "admin" && (
+    <li className="nav-item">
+      <NavLink
+        to="/admin"
+        className={navLinkClass}
+        onClick={closeMobileMenu}
+      >
+        Admin
+      </NavLink>
+    </li>
+  )}
 
-            {currentUser?.role === "admin" && (
-              <li className="nav-item">
-                <NavLink
-                  to="/admin"
-                  className={navLinkClass}
-                >
-                  Admin
-                </NavLink>
-              </li>
-            )}
-
-          </ul>
-
+</ul>
 
           {/* ===================================
               RIGHT SIDE
           =================================== */}
 
-          <div className="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2 navbar-actions flex-wrap">
 
-            {/* =================================
-                DARK / LIGHT MODE
-            ================================= */}
+            {/* DARK / LIGHT MODE */}
 
             <button
               type="button"
@@ -237,27 +256,19 @@ export default function Navbar() {
               style={{
                 width: "42px",
                 height: "42px",
+                flexShrink: 0,
               }}
               onClick={() =>
                 setTheme(
-                  theme === "light"
-                    ? "dark"
-                    : "light"
+                  theme === "light" ? "dark" : "light"
                 )
               }
               title="Change theme"
             >
-              {theme === "light" ? (
-                <FaMoon />
-              ) : (
-                <FaSun />
-              )}
+              {theme === "light" ? <FaMoon /> : <FaSun />}
             </button>
 
-
-            {/* =================================
-                CART
-            ================================= */}
+            {/* CART */}
 
             <Link
               to="/cart"
@@ -265,8 +276,10 @@ export default function Navbar() {
               style={{
                 width: "42px",
                 height: "42px",
+                flexShrink: 0,
               }}
               title="Shopping Cart"
+              onClick={closeMobileMenu}
             >
               <FaShoppingBag />
 
@@ -278,28 +291,20 @@ export default function Navbar() {
                   }}
                 >
                   {cartItems.reduce(
-                    (total, item) =>
-                      total + item.qty,
+                    (total, item) => total + item.qty,
                     0
                   )}
                 </span>
               )}
             </Link>
 
-
-            {/* =================================
-                USER LOGGED IN
-            ================================= */}
+            {/* USER */}
 
             {currentUser ? (
-
               <div
                 className="position-relative"
                 ref={profileRef}
               >
-
-                {/* PROFILE BUTTON */}
-
                 <button
                   type="button"
                   className={`btn rounded-pill d-flex align-items-center gap-2 px-3 ${
@@ -308,63 +313,44 @@ export default function Navbar() {
                       : "btn-outline-success"
                   }`}
                   onClick={() =>
-                    setProfileOpen(
-                      !profileOpen
-                    )
+                    setProfileOpen(!profileOpen)
                   }
                   aria-expanded={profileOpen}
                 >
-
                   <FaUserCircle size={18} />
 
                   <span className="fw-semibold">
                     {currentUser.name
-                      ?.split(" ")[0] ||
-                      "Account"}
+                      ?.split(" ")[0] || "Account"}
                   </span>
 
                   <FaChevronDown
                     size={10}
                     className={
-                      profileOpen
-                        ? "rotate-180"
-                        : ""
+                      profileOpen ? "rotate-180" : ""
                     }
                   />
-
                 </button>
-
 
                 {/* PROFILE DROPDOWN */}
 
                 {profileOpen && (
-
                   <div
-                    className="position-absolute end-0 mt-2 bg-white border rounded-3 shadow-lg p-2"
+                    className="position-absolute end-0 mt-2 bg-white border rounded-3 shadow-lg p-2 profile-dropdown"
                     style={{
                       width: "210px",
                       zIndex: 1050,
                     }}
                   >
 
-                    {/* MY PROFILE */}
-
                     <button
                       type="button"
                       className="btn btn-light w-100 d-flex align-items-center gap-2 text-start mb-1"
                       onClick={handleProfile}
                     >
-                      <FaUser
-                        className="text-success"
-                      />
-
-                      <span>
-                        My Profile
-                      </span>
+                      <FaUser className="text-success" />
+                      <span>My Profile</span>
                     </button>
-
-
-                    {/* MY ORDERS */}
 
                     <button
                       type="button"
@@ -374,21 +360,11 @@ export default function Navbar() {
                         navigate("/orders");
                       }}
                     >
-                      <FaShoppingBag
-                        className="text-success"
-                      />
-
-                      <span>
-                        My Orders
-                      </span>
+                      <FaShoppingBag className="text-success" />
+                      <span>My Orders</span>
                     </button>
 
-
-                    {/* ADMIN */}
-
-                    {currentUser.role ===
-                      "admin" && (
-
+                    {currentUser.role === "admin" && (
                       <button
                         type="button"
                         className="btn btn-light w-100 d-flex align-items-center gap-2 text-start mb-1"
@@ -397,24 +373,12 @@ export default function Navbar() {
                           navigate("/admin");
                         }}
                       >
-                        <FaUser
-                          className="text-success"
-                        />
-
-                        <span>
-                          Admin Dashboard
-                        </span>
+                        <FaUser className="text-success" />
+                        <span>Admin Dashboard</span>
                       </button>
-
                     )}
 
-
-                    {/* DIVIDER */}
-
                     <hr className="my-2" />
-
-
-                    {/* LOGOUT */}
 
                     <button
                       type="button"
@@ -422,45 +386,26 @@ export default function Navbar() {
                       onClick={handleLogout}
                     >
                       <FaSignOutAlt />
-
-                      <span>
-                        Logout
-                      </span>
+                      <span>Logout</span>
                     </button>
 
                   </div>
-
                 )}
-
               </div>
-
             ) : (
-
-              /* =================================
-                 LOGIN BUTTON
-              ================================= */
-
               <Link
                 to="/login"
                 className="btn btn-success rounded-pill px-4 fw-semibold"
+                onClick={closeMobileMenu}
               >
                 Login
               </Link>
-
             )}
 
           </div>
 
         </div>
-
       </div>
-      
-<Link
-  to="/subscriptions"
-  className="nav-link p-2 btn btn-outline-success"
->
-  My Subscriptions
-</Link>
     </nav>
   );
 }

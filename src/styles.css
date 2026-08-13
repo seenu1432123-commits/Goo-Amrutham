@@ -7,3 +7,425 @@
   transform: rotate(180deg);
   transition: transform 0.2s ease;
 }
+/* =========================================
+   MOBILE NAVBAR FIX
+========================================= */
+
+.navbar {
+  width: 100%;
+  max-width: 100%;
+}
+
+.navbar .container {
+  max-width: 100%;
+}
+
+.navbar-actions {
+  flex-shrink: 0;
+}
+
+.profile-dropdown {
+  max-width: calc(100vw - 30px);
+}
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 991px) {
+
+  .navbar .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .navbar-collapse {
+    width: 100%;
+    padding-top: 15px;
+  }
+
+  .navbar-nav {
+    width: 100%;
+  }
+
+  .navbar-nav .nav-item {
+    width: 100%;
+  }
+
+  .navbar-nav .nav-link {
+    padding: 11px 8px !important;
+    margin: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .navbar-actions {
+    width: 100%;
+    padding-top: 15px;
+    padding-bottom: 8px;
+    display: flex;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .navbar-actions .btn {
+    flex-shrink: 0;
+  }
+}
+
+/* =========================================
+   SMALL PHONES
+========================================= */
+
+@media (max-width: 575px) {
+
+  .navbar .container {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .navbar-brand img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .navbar-brand small {
+    display: none;
+  }
+
+  .navbar-brand .fs-5 {
+    font-size: 1rem !important;
+  }
+
+  .profile-dropdown {
+    right: 0 !important;
+    width: min(210px, calc(100vw - 30px)) !important;
+  }
+
+  .navbar-actions {
+    gap: 8px !important;
+  }
+
+  .navbar-actions .btn {
+    min-height: 42px;
+  }
+}
+/* =========================================
+   HOME PAGE MOBILE FIXES
+========================================= */
+
+@media (max-width: 767px) {
+
+  /* HERO */
+
+  .hero {
+    padding: 3rem 0 3.5rem;
+  }
+
+  .hero .row {
+    --bs-gutter-y: 2.5rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.4rem, 11vw, 3.2rem);
+    line-height: 1.05;
+  }
+
+  .hero p {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .hero .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .hero-image-card {
+    border-radius: 1.25rem;
+  }
+
+  .hero-image-card img {
+    height: 330px;
+  }
+
+  .hero-badge {
+    left: 14px;
+    bottom: 14px;
+    padding: 10px 14px;
+    border-radius: 14px;
+  }
+
+  .hero-badge b {
+    font-size: 1.25rem;
+  }
+
+  /* TRUST STRIP */
+
+  .trust-strip {
+    padding: .7rem 0;
+  }
+
+  .trust-card {
+    padding: 10px 5px;
+    gap: 8px;
+  }
+
+  .trust-card svg {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+
+  .trust-card b {
+    font-size: .8rem;
+  }
+
+  .trust-card small {
+    font-size: .7rem;
+  }
+
+  /* SECTION HEADINGS */
+
+  .section-heading {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-heading h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-heading > a {
+    display: inline-block;
+  }
+
+  /* PRODUCT GRID */
+
+  .product-card {
+    border-radius: 1.2rem;
+  }
+
+  .product-image-wrap {
+    height: 250px;
+  }
+
+  /* STORY */
+
+  .story-img {
+    height: 320px;
+    border-radius: 1.2rem;
+  }
+
+  .story-section .row {
+    --bs-gutter-y: 2rem;
+  }
+
+  /* FEATURE CARDS */
+
+  .feature-box {
+    padding: 1.25rem;
+  }
+
+  /* CTA */
+
+  .cta-section {
+    padding-bottom: 3.5rem;
+  }
+
+  .cta-card {
+    padding: 2rem 1.5rem;
+    border-radius: 1.4rem;
+    gap: 1.5rem;
+  }
+
+  .cta-card h2 {
+    font-size: 2rem;
+  }
+
+  .cta-card p {
+    line-height: 1.6;
+  }
+
+  .cta-card .btn {
+    width: 100%;
+  }
+
+  /* BOTTLE SECTION */
+
+  .clean-bottle {
+    max-height: 320px;
+  }
+
+  /* SOFT CARDS */
+
+  .soft-card {
+    padding: 1.2rem;
+  }
+
+  /* REVIEWS */
+
+  .review-card {
+    padding: 1.25rem;
+  }
+
+  /* FAQ */
+
+  .accordion-button {
+    padding: 1rem;
+    font-size: .95rem;
+  }
+
+  .accordion-body {
+    font-size: .9rem;
+    line-height: 1.6;
+  }
+}
+
+/* =========================================
+   EXTRA SMALL PHONES
+========================================= */
+
+@media (max-width: 575px) {
+
+  .hero {
+    padding-top: 2.5rem;
+  }
+
+  .hero .container,
+  .section-pad .container,
+  .cta-section .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .mini-trust {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .6rem;
+    font-size: .8rem;
+  }
+
+  .mini-trust span:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .hero-image-card img {
+    height: 300px;
+  }
+
+  .trust-card {
+    min-height: 62px;
+  }
+
+  .section-pad {
+    padding: 3.5rem 0;
+  }
+
+  .section-heading h2 {
+    font-size: 1.9rem;
+  }
+
+  .product-image-wrap {
+    height: 230px;
+  }
+
+  .story-img {
+    height: 300px;
+  }
+
+  .clean-bottle {
+    max-height: 280px;
+  }
+
+  .cta-card h2 {
+    font-size: 1.8rem;
+  }
+
+  .cta-card {
+    padding: 1.5rem;
+  }
+}
+/* =========================================
+   MOBILE NAVBAR FIX
+========================================= */
+
+@media (max-width: 991px) {
+
+  .navbar .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .navbar-collapse {
+    width: 100%;
+    padding-top: 1rem;
+  }
+
+  .navbar-nav {
+    width: 100%;
+  }
+
+  .navbar-nav .nav-item {
+    width: 100%;
+  }
+
+  .navbar-nav .nav-link {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 0.5rem !important;
+    margin: 0 !important;
+    border-radius: 8px;
+  }
+
+  .navbar-nav .nav-link:hover,
+  .navbar-nav .nav-link.active {
+    background: var(--soft);
+  }
+
+  .navbar-actions {
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .profile-dropdown {
+    position: fixed !important;
+    right: 15px !important;
+    top: 75px;
+    width: min(210px, calc(100vw - 30px)) !important;
+  }
+}
+
+/* =========================================
+   VERY SMALL MOBILE SCREENS
+========================================= */
+
+@media (max-width: 575px) {
+
+  .navbar-brand {
+    max-width: calc(100% - 60px);
+  }
+
+  .navbar-brand img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .navbar-toggler {
+    padding: 0.4rem;
+  }
+
+  .navbar-actions {
+    gap: 0.5rem !important;
+  }
+
+  .navbar-actions .btn {
+    min-height: 42px;
+  }
+
+  .navbar-actions > .btn-success {
+    padding-left: 1.1rem !important;
+    padding-right: 1.1rem !important;
+  }
+}

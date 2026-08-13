@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { FaArrowLeft, FaEnvelope, FaCheckCircle } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaEnvelope,
+  FaCheckCircle,
+} from "react-icons/fa";
 
-import { supabase } from "../lib/supabase";
+import { supabase, supabaseConfigured } from "../lib/supabase";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -15,6 +19,13 @@ export default function ForgotPassword() {
 
     setMessage("");
     setError("");
+
+    if (!supabaseConfigured || !supabase) {
+      setError(
+        "Password reset is currently unavailable. Please try again later."
+      );
+      return;
+    }
 
     if (!email.trim()) {
       setError("Please enter your email address.");
@@ -29,7 +40,7 @@ export default function ForgotPassword() {
 
       const { error } =
         await supabase.auth.resetPasswordForEmail(
-          email.trim(),
+          email.trim().toLowerCase(),
           {
             redirectTo,
           }
@@ -49,7 +60,7 @@ export default function ForgotPassword() {
 
       setError(
         err?.message ||
-          "Unable to send password reset email."
+          "Unable to send password reset email. Please try again."
       );
     } finally {
       setLoading(false);
@@ -58,16 +69,17 @@ export default function ForgotPassword() {
 
   return (
     <main className="page">
-      <div className="container py-5">
+      <div className="container py-4 py-md-5">
 
         <div className="row justify-content-center">
 
-          <div className="col-12 col-md-7 col-lg-5">
+          <div className="col-12 col-sm-10 col-md-7 col-lg-5">
 
             <div className="card border-0 shadow-sm rounded-4">
 
-              <div className="card-body p-4 p-md-5">
+              <div className="card-body p-3 p-sm-4 p-md-5">
 
+                {/* HEADER */}
                 <div className="text-center mb-4">
 
                   <div
@@ -86,18 +98,20 @@ export default function ForgotPassword() {
                   </h2>
 
                   <p className="text-muted mb-0">
-                    Enter your registered email address
-                    and we'll send you a password reset link.
+                    Enter your registered email address and
+                    we'll send you a password reset link.
                   </p>
 
                 </div>
 
+                {/* ERROR */}
                 {error && (
                   <div className="alert alert-danger rounded-3">
                     {error}
                   </div>
                 )}
 
+                {/* SUCCESS */}
                 {message && (
                   <div className="alert alert-success rounded-3">
 
@@ -108,15 +122,20 @@ export default function ForgotPassword() {
                   </div>
                 )}
 
+                {/* FORM */}
                 <form onSubmit={handleSubmit}>
 
                   <div className="mb-3">
 
-                    <label className="form-label fw-semibold">
+                    <label
+                      htmlFor="reset-email"
+                      className="form-label fw-semibold"
+                    >
                       Email Address
                     </label>
 
                     <input
+                      id="reset-email"
                       type="email"
                       className="form-control form-control-lg rounded-3"
                       placeholder="Enter your email"
@@ -125,7 +144,10 @@ export default function ForgotPassword() {
                         setEmail(e.target.value)
                       }
                       autoComplete="email"
+                      inputMode="email"
+                      autoCapitalize="none"
                       required
+                      disabled={loading}
                     />
 
                   </div>
@@ -142,6 +164,7 @@ export default function ForgotPassword() {
 
                 </form>
 
+                {/* BACK TO LOGIN */}
                 <div className="text-center mt-4">
 
                   <Link
