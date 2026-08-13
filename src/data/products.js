@@ -29,6 +29,51 @@ export const products = [
     badge: "Popular",
     description: "A convenient half-litre option for smaller households."
   },
+    {
+    id: "fresh-curd-01",
+    name: "Fresh Curd",
+    unit: "1 Litres",
+    price: 100,
+    image: bottle,
+    badge: "Family Pack",
+    description: "A practical family-size quantity for regular delivery."
+  },
+    {
+    id: "fresh-curd-01",
+    name: "Fresh Curd",
+    unit: "1 Litres",
+    price: 100,
+    image: bottle,
+    badge: "Family Pack",
+    description: "A practical family-size quantity for regular delivery."
+  },
+    {
+    id: "fresh-curd-01",
+    name: "Fresh Curd",
+    unit: "1 Litres",
+    price: 100,
+    image: bottle,
+    badge: "Family Pack",
+    description: "A practical family-size quantity for regular delivery."
+  },
+    {
+    id: "fresh-curd-01",
+    name: "Fresh Curd",
+    unit: "1 Litres",
+    price: 100,
+    image: bottle,
+    badge: "Family Pack",
+    description: "A practical family-size quantity for regular delivery."
+  },
+    {
+    id: "fresh-curd-01",
+    name: "Fresh Curd",
+    unit: "1 Litres",
+    price: 100,
+    image: bottle,
+    badge: "Family Pack",
+    description: "A practical family-size quantity for regular delivery."
+  },
   {
     id: "raw-cow-2l",
     name: "Fresh Raw Cow Milk",
