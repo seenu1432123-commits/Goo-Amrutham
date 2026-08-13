@@ -6,7 +6,10 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 
-import { supabase, supabaseConfigured } from "../lib/supabase";
+import {
+  supabase,
+  supabaseConfigured,
+} from "../lib/supabase";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -35,8 +38,12 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
+      // ==========================================
+      // PRODUCTION PASSWORD RESET URL
+      // ==========================================
+
       const redirectTo =
-        `${window.location.origin}/update-password`;
+        "https://goo-amrutham-5i1w.vercel.app/update-password";
 
       const { error } =
         await supabase.auth.resetPasswordForEmail(
@@ -56,7 +63,10 @@ export default function ForgotPassword() {
 
       setEmail("");
     } catch (err) {
-      console.error("Forgot password error:", err);
+      console.error(
+        "Forgot password error:",
+        err
+      );
 
       setError(
         err?.message ||
@@ -80,6 +90,7 @@ export default function ForgotPassword() {
               <div className="card-body p-3 p-sm-4 p-md-5">
 
                 {/* HEADER */}
+
                 <div className="text-center mb-4">
 
                   <div
@@ -104,14 +115,18 @@ export default function ForgotPassword() {
 
                 </div>
 
+
                 {/* ERROR */}
+
                 {error && (
                   <div className="alert alert-danger rounded-3">
                     {error}
                   </div>
                 )}
 
+
                 {/* SUCCESS */}
+
                 {message && (
                   <div className="alert alert-success rounded-3">
 
@@ -122,7 +137,9 @@ export default function ForgotPassword() {
                   </div>
                 )}
 
+
                 {/* FORM */}
+
                 <form onSubmit={handleSubmit}>
 
                   <div className="mb-3">
@@ -152,6 +169,7 @@ export default function ForgotPassword() {
 
                   </div>
 
+
                   <button
                     type="submit"
                     className="btn btn-success btn-lg w-100 rounded-pill"
@@ -164,15 +182,20 @@ export default function ForgotPassword() {
 
                 </form>
 
+
                 {/* BACK TO LOGIN */}
+
                 <div className="text-center mt-4">
 
                   <Link
                     to="/login"
                     className="text-success text-decoration-none fw-semibold"
                   >
+
                     <FaArrowLeft className="me-2" />
+
                     Back to Login
+
                   </Link>
 
                 </div>
