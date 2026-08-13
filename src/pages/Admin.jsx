@@ -122,6 +122,7 @@ function StatCard({ label, value, sub, icon, tone = "green", onClick }) {
 }
 
 export default function Admin() {
+    let h1=<h4>today</h4>
   const {
     currentUser,
     users,
@@ -682,10 +683,10 @@ export default function Admin() {
         .empty-icon{width:60px;height:60px;border-radius:18px;background:#f0f5f2;display:grid;place-items:center;margin:0 auto 14px;font-size:25px}
         .mobile-list{display:none}
         .customer-list{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-        .customer-card{border:1px solid var(--line);border-radius:16px;padding:17px;background:#fff}
+        .customer-card{border:1px solid var(--line);border-radius:16px;padding:17px;background:#fff;width:560px}
         .customer-head{display:flex;align-items:center;gap:11px}
         .customer-card .customer-avatar{width:43px;height:43px;border-radius:13px}
-        .customer-card h4{font-size:14px;margin:0;font-weight:800}
+        .customer-card h4{font-size:20px;margin:0;font-weight:800}
         .customer-info{display:grid;gap:7px;margin-top:15px;color:#69776f;font-size:12px}
         .customer-info span{display:flex;gap:8px;align-items:flex-start}
         .customer-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:15px;padding-top:12px;font-size:11px;color:#88948e}
@@ -1261,10 +1262,10 @@ export default function Admin() {
                   </span>
                 </div>
 
-                <div className="section-body">
-                  <div className="customer-list">
+                <div className="section-body m-2">
+                  <div className="customer-list d-flex flex-wrap">
                     {safeUsers.map((user) => (
-                      <div className="customer-card" key={user.id}>
+                      <div className="customer-card m-auto" key={user.id}>
                         <div className="customer-head">
                           <div className="customer-avatar">
                             {(user.name || "C").charAt(0).toUpperCase()}
@@ -1279,9 +1280,9 @@ export default function Admin() {
                         </div>
 
                         <div className="customer-info">
-                          <span><FaPhone className="text-success" /> {user.phone || "No phone"}</span>
-                          <span><FaEnvelope className="text-success" /> {user.email || "No email"}</span>
-                          <span><FaMapMarkerAlt className="text-success" /> {user.city || "No city"}</span>
+                          <h5><span><FaPhone className="text-success" /> {user.phone || "No phone"}</span></h5>
+                          <h6><span><FaEnvelope className="text-success" /> {user.email || "No email"}</span></h6>
+                          <h6><span><FaMapMarkerAlt className="text-success" /> {user.city || "No city"}</span></h6>
                         </div>
 
                         <div className="customer-footer">
