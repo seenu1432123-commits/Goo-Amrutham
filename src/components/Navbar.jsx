@@ -130,7 +130,7 @@ export default function Navbar() {
             </div>
 
             <small className="text-muted">
-              Natural Organic Milk
+              Natural Fresh Milk
             </small>
           </div>
         </Link>

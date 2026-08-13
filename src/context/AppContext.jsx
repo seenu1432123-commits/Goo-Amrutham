@@ -1174,6 +1174,26 @@ export function AppProvider({
 
         };
 
+        const deleteOrder = async (orderId) => {
+    if (!supabase || currentUser?.role !== "admin") {
+        throw new Error("Admin access required.");
+    }
+
+    if (!orderId) {
+        throw new Error("Order ID is required.");
+    }
+
+    const { error } = await supabase.rpc("delete_order", {
+        p_order_id: orderId,
+    });
+
+    if (error) {
+        throw error;
+    }
+
+    await fetchOrders();
+};
+
 
     // =================================================
     // UPDATE PROFILE
@@ -1288,6 +1308,8 @@ export function AppProvider({
         createOrder,
 
         updateOrderStatus,
+
+        deleteOrder,
 
         updateProfile,
 
