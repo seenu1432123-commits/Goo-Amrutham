@@ -11,6 +11,15 @@ export const products = [
     badge: "Best Seller",
     description: "Fresh milk for your family's everyday routine."
   },
+   {
+    id: "fresh-curd-01",
+    name: "Fresh Curd",
+    unit: "1 Litres",
+    price: 100,
+    image: bottle,
+    badge: "Family Pack",
+    description: "A practical family-size quantity for regular delivery."
+  },
   {
     id: "raw-cow-500",
     name: "Fresh Raw Cow Milk",
@@ -29,4 +38,5 @@ export const products = [
     badge: "Family Pack",
     description: "A practical family-size quantity for regular delivery."
   }
+  
 ];
