@@ -30,7 +30,7 @@ export const products = [
     description: "A convenient half-litre option for smaller households."
   },
     {
-    id: "fresh-curd-01",
+    id: "fresh-curd-02",
     name: "Fresh Curd",
     unit: "1 Litres",
     price: 100,
@@ -39,7 +39,7 @@ export const products = [
     description: "A practical family-size quantity for regular delivery."
   },
     {
-    id: "fresh-curd-01",
+    id: "fresh-curd-03",
     name: "Fresh Curd",
     unit: "1 Litres",
     price: 100,
@@ -48,7 +48,7 @@ export const products = [
     description: "A practical family-size quantity for regular delivery."
   },
     {
-    id: "fresh-curd-01",
+    id: "fresh-curd-04",
     name: "Fresh Curd",
     unit: "1 Litres",
     price: 100,
@@ -57,7 +57,7 @@ export const products = [
     description: "A practical family-size quantity for regular delivery."
   },
     {
-    id: "fresh-curd-01",
+    id: "fresh-curd-05",
     name: "Fresh Curd",
     unit: "1 Litres",
     price: 100,
@@ -66,7 +66,7 @@ export const products = [
     description: "A practical family-size quantity for regular delivery."
   },
     {
-    id: "fresh-curd-01",
+    id: "fresh-curd-06",
     name: "Fresh Curd",
     unit: "1 Litres",
     price: 100,
@@ -75,7 +75,7 @@ export const products = [
     description: "A practical family-size quantity for regular delivery."
   },
   {
-    id: "raw-cow-2l",
+    id: "raw-cow-0l",
     name: "Fresh Raw Cow Milk",
     unit: "2 Litres",
     price: 160,
