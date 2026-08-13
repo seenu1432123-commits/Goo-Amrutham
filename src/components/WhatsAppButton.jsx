@@ -1,7 +1,7 @@
 import React from "react";
 import { FaWhatsapp } from "react-icons/fa";
 
-const NUMBER = "8919597205";
+const NUMBER = "918919597205";
 
 export default function WhatsAppButton({ message = "Hello Goo Amrutham Milk, I want to order fresh milk." }) {
   const href = `https://wa.me/${NUMBER}?text=${encodeURIComponent(message)}`;
