@@ -5,7 +5,7 @@ import curd2 from "../assets/images/Curd2L.png";
 import curd from "../assets/images/Curd500ML.png";
 export const products = [
    {
-    id: "raw-cow-0l",
+    id: "raw-cow-2l",
     name: "Fresh Raw Cow Milk",
     unit: "2 Litres",
     price: 160,

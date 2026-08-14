@@ -3,6 +3,7 @@ import {
   FaUsers,
   FaShoppingBag,
   FaRupeeSign,
+  FaCreditCard,
   FaTruck,
   FaSearch,
   FaDownload,
@@ -122,7 +123,6 @@ function StatCard({ label, value, sub, icon, tone = "green", onClick }) {
 }
 
 export default function Admin() {
-    let h1=<h4>today</h4>
   const {
     currentUser,
     users,
@@ -141,8 +141,16 @@ export default function Admin() {
   const [success, setSuccess] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [mobileNav, setMobileNav] = useState(false);
+  // Keeps a successfully deleted order out of the UI immediately, even if the
+  // AppContext refresh returns stale data for a moment.
+  const [deletedOrderIds, setDeletedOrderIds] = useState(() => new Set());
+  const [paymentQuery, setPaymentQuery] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
 
-  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeOrders = useMemo(
+    () => (Array.isArray(orders) ? orders : []).filter((order) => !deletedOrderIds.has(order.id)),
+    [orders, deletedOrderIds]
+  );
   const safeUsers = Array.isArray(users) ? users : [];
 
   const today = new Date().toISOString().split("T")[0];
@@ -226,6 +234,40 @@ export default function Admin() {
     });
   }, [safeOrders, query, statusFilter]);
 
+  const paymentRecords = useMemo(() => {
+    const q = paymentQuery.trim().toLowerCase();
+    return safeOrders.filter((order) => {
+      const text = [
+        order.id,
+        order.order_number,
+        customerName(order),
+        customerPhone(order),
+        customerEmail(order),
+        order.payment_method,
+        order.payment_status,
+        order.razorpay_order_id,
+        order.razorpay_payment_id,
+      ].filter(Boolean).join(" ").toLowerCase();
+
+      return (
+        (!q || text.includes(q)) &&
+        (paymentStatusFilter === "All" || String(order.payment_status || "Pending") === paymentStatusFilter)
+      );
+    });
+  }, [safeOrders, paymentQuery, paymentStatusFilter]);
+
+  const paymentSummary = useMemo(() => {
+    const paid = safeOrders.filter((o) => String(o.payment_status || "Pending").toLowerCase() === "paid");
+    const pending = safeOrders.filter((o) => String(o.payment_status || "Pending").toLowerCase() === "pending");
+    const failed = safeOrders.filter((o) => ["failed", "failure"].includes(String(o.payment_status || "").toLowerCase()));
+    return {
+      paidCount: paid.length,
+      pendingCount: pending.length,
+      failedCount: failed.length,
+      paidAmount: paid.reduce((sum, o) => sum + orderTotal(o), 0),
+    };
+  }, [safeOrders]);
+
   const activeSubscriptions = useMemo(
     () => subscriptions.filter((s) => s.status === "Active").length,
     [subscriptions]
@@ -305,12 +347,27 @@ export default function Admin() {
 
       if (error) throw error;
 
+      // Update this component immediately. This fixes the case where the
+      // database delete succeeds but the AppContext still contains the old
+      // orders array, so the row used to remain visible until a full reload.
+      setDeletedOrderIds((previous) => {
+        const next = new Set(previous);
+        next.add(id);
+        return next;
+      });
+
       if (selectedOrder?.id === id) {
         setSelectedOrder(null);
       }
 
+      // Refresh the shared order state as well. The local deleted-id set keeps
+      // the UI correct even if this refresh briefly returns stale data.
       if (refreshOrders) {
-        await refreshOrders();
+        try {
+          await refreshOrders();
+        } catch (refreshError) {
+          console.warn("Order deleted, but refreshOrders failed:", refreshError);
+        }
       }
 
       showSuccess(`Order ${orderLabel} deleted successfully.`);
@@ -413,6 +470,42 @@ export default function Admin() {
     );
   };
 
+  const exportPaymentsCSV = () => {
+    downloadCSV(
+      [
+        [
+          "Order ID",
+          "Customer",
+          "Phone",
+          "Email",
+          "Amount",
+          "Payment Method",
+          "Payment Status",
+          "Razorpay Order ID",
+          "Razorpay Payment ID",
+          "Razorpay Signature",
+          "Order Status",
+          "Created",
+        ],
+        ...paymentRecords.map((order) => [
+          order.order_number || order.id || "",
+          customerName(order),
+          customerPhone(order),
+          customerEmail(order),
+          orderTotal(order),
+          order.payment_method || "COD",
+          order.payment_status || "Pending",
+          order.razorpay_order_id || "",
+          order.razorpay_payment_id || "",
+          order.razorpay_signature || "",
+          order.status || "",
+          order.createdAt || order.created_at || "",
+        ]),
+      ],
+      "goo-amrutham-payments.csv"
+    );
+  };
+
   const exportSubscriptionsCSV = () => {
     downloadCSV(
       [
@@ -474,6 +567,7 @@ export default function Admin() {
   const navItems = [
     { id: "dashboard", label: "Overview", icon: <FaChartLine /> },
     { id: "orders", label: "Orders", icon: <FaShoppingBag />, count: safeOrders.length },
+    { id: "payments", label: "Payments", icon: <FaCreditCard />, count: paymentSummary.paidCount },
     { id: "customers", label: "Customers", icon: <FaUsers />, count: safeUsers.length },
     {
       id: "subscriptions",
@@ -683,10 +777,10 @@ export default function Admin() {
         .empty-icon{width:60px;height:60px;border-radius:18px;background:#f0f5f2;display:grid;place-items:center;margin:0 auto 14px;font-size:25px}
         .mobile-list{display:none}
         .customer-list{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
-        .customer-card{border:1px solid var(--line);border-radius:16px;padding:17px;background:#fff;width:560px}
+        .customer-card{border:1px solid var(--line);border-radius:16px;padding:17px;background:#fff;width:540px}
         .customer-head{display:flex;align-items:center;gap:11px}
         .customer-card .customer-avatar{width:43px;height:43px;border-radius:13px}
-        .customer-card h4{font-size:20px;margin:0;font-weight:800}
+        .customer-card h4{font-size:14px;margin:0;font-weight:800}
         .customer-info{display:grid;gap:7px;margin-top:15px;color:#69776f;font-size:12px}
         .customer-info span{display:flex;gap:8px;align-items:flex-start}
         .customer-footer{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);margin-top:15px;padding-top:12px;font-size:11px;color:#88948e}
@@ -698,6 +792,24 @@ export default function Admin() {
         .sub-stat strong{display:block;font-size:22px;margin-top:4px}
         .sub-green{background:#eaf8ef}.sub-orange{background:#fff6df}.sub-red{background:#fff0f0}
         .subscription-cards{display:none}
+        .payment-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;padding:18px 20px;border-bottom:1px solid var(--line)}
+        .payment-summary-card{border-radius:15px;padding:16px;border:1px solid var(--line)}
+        .payment-summary-card span{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#718078}
+        .payment-summary-card strong{display:block;font-size:24px;margin-top:5px}
+        .payment-summary-card small{display:block;color:#7a8981;margin-top:3px}
+        .payment-summary-card.paid{background:#eaf8ef}.payment-summary-card.paid strong{color:#167544}
+        .payment-summary-card.pending{background:#fff6df}.payment-summary-card.pending strong{color:#9b6800}
+        .payment-summary-card.failed{background:#fff0f0}.payment-summary-card.failed strong{color:#b52f35}
+        .payment-id-cell{display:block;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;font-size:11px;color:#66746d}
+        .payment-details-box{background:#f7faf8}
+        .payment-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+        .payment-detail-grid>div{background:#fff;border:1px solid #e7eeea;border-radius:12px;padding:12px}
+        .payment-detail-grid span{display:block;font-size:10px;color:#839087;text-transform:uppercase;letter-spacing:.8px;font-weight:800}
+        .payment-detail-grid strong{display:block;margin-top:6px;font-size:12px;word-break:break-all}
+        .payment-mobile-id{margin-top:13px;padding:10px 12px;background:#f7faf8;border-radius:12px;border:1px solid #edf2ef}
+        .payment-mobile-id small,.payment-mobile-id span{display:block}
+        .payment-mobile-id small{color:#839087;font-size:10px;text-transform:uppercase;font-weight:800;letter-spacing:.6px}
+        .payment-mobile-id span{font-size:11px;margin-top:4px;word-break:break-all;font-family:monospace}
         .modal-backdrop-custom{
           position:fixed;inset:0;background:rgba(8,25,17,.62);backdrop-filter:blur(7px);
           z-index:1000;display:grid;place-items:center;padding:18px;
@@ -764,6 +876,8 @@ export default function Admin() {
           .stat-value{font-size:22px;margin-top:10px}
           .section-head,.section-body{padding:16px}
           .subscription-mini-grid{grid-template-columns:1fr}
+          .payment-summary-grid{grid-template-columns:1fr}
+          .payment-detail-grid{grid-template-columns:1fr}
           .sub-grid{padding:12px;gap:7px}
           .sub-stat{padding:11px}
           .sub-stat strong{font-size:19px}
@@ -1249,6 +1363,161 @@ export default function Admin() {
               </>
             )}
 
+            {tab === "payments" && (
+              <>
+                <div className="section-head">
+                  <div>
+                    <h2 className="section-title">Payment History</h2>
+                    <p className="section-desc">View payment status, methods and Razorpay transaction details from the orders table.</p>
+                  </div>
+                  <button type="button" className="admin-action primary" onClick={exportPaymentsCSV}>
+                    <FaDownload className="me-2" /> Export CSV
+                  </button>
+                </div>
+
+                <div className="payment-summary-grid">
+                  <div className="payment-summary-card paid">
+                    <span>Paid Amount</span>
+                    <strong>₹{money(paymentSummary.paidAmount)}</strong>
+                    <small>{paymentSummary.paidCount} paid transactions</small>
+                  </div>
+                  <div className="payment-summary-card pending">
+                    <span>Pending</span>
+                    <strong>{paymentSummary.pendingCount}</strong>
+                    <small>Awaiting payment</small>
+                  </div>
+                  <div className="payment-summary-card failed">
+                    <span>Failed</span>
+                    <strong>{paymentSummary.failedCount}</strong>
+                    <small>Failed payment records</small>
+                  </div>
+                </div>
+
+                <div className="toolbar">
+                  <div className="search-box">
+                    <FaSearch />
+                    <input
+                      className="admin-input"
+                      placeholder="Search order, customer, payment ID or method..."
+                      value={paymentQuery}
+                      onChange={(e) => setPaymentQuery(e.target.value)}
+                    />
+                  </div>
+                  <select
+                    className="admin-select"
+                    value={paymentStatusFilter}
+                    onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                  >
+                    <option value="All">All payment statuses</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Failed">Failed</option>
+                  </select>
+                </div>
+
+                <div className="desktop-orders table-wrap">
+                  <table className="admin-table payment-table">
+                    <thead>
+                      <tr>
+                        <th>Order</th>
+                        <th>Customer</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Payment Status</th>
+                        <th>Razorpay Payment ID</th>
+                        <th>Date</th>
+                        <th>Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {paymentRecords.map((order) => {
+                        const paymentStatus = order.payment_status || "Pending";
+                        const normalized = String(paymentStatus).toLowerCase();
+                        const statusClass = normalized === "paid" ? "status-green" : normalized === "pending" ? "status-orange" : "status-red";
+                        const dotClass = normalized === "paid" ? "dot-green" : normalized === "pending" ? "dot-orange" : "dot-red";
+                        return (
+                          <tr key={order.id}>
+                            <td>
+                              <span className="order-number">{order.order_number || order.id}</span>
+                              <span className="muted-line">{order.status || "Order Placed"}</span>
+                            </td>
+                            <td>
+                              <div className="customer-cell">
+                                <div className="customer-avatar">{customerName(order).charAt(0).toUpperCase()}</div>
+                                <div>
+                                  <strong>{customerName(order)}</strong>
+                                  <span className="muted-line">{customerPhone(order)}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td><strong>₹{money(orderTotal(order))}</strong></td>
+                            <td>{order.payment_method || "COD"}</td>
+                            <td>
+                              <span className={`admin-status ${statusClass}`}>
+                                <span className={`status-dot ${dotClass}`} />
+                                {paymentStatus}
+                              </span>
+                            </td>
+                            <td>
+                              <span className="payment-id-cell">{order.razorpay_payment_id || "—"}</span>
+                            </td>
+                            <td>{dateTime(order.createdAt || order.created_at)}</td>
+                            <td>
+                              <button type="button" className="admin-action" onClick={() => setSelectedOrder(order)}>
+                                <FaEye className="me-1" /> View
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="mobile-list">
+                  {paymentRecords.map((order) => {
+                    const paymentStatus = order.payment_status || "Pending";
+                    const normalized = String(paymentStatus).toLowerCase();
+                    const statusClass = normalized === "paid" ? "status-green" : normalized === "pending" ? "status-orange" : "status-red";
+                    const dotClass = normalized === "paid" ? "dot-green" : normalized === "pending" ? "dot-orange" : "dot-red";
+                    return (
+                      <div className="order-mobile-card" key={order.id}>
+                        <div className="d-flex justify-content-between gap-2">
+                          <div>
+                            <small className="muted-line">PAYMENT</small>
+                            <strong>{order.order_number || order.id}</strong>
+                            <span className="muted-line">{dateTime(order.createdAt || order.created_at)}</span>
+                          </div>
+                          <span className={`admin-status ${statusClass}`}>
+                            <span className={`status-dot ${dotClass}`} />{paymentStatus}
+                          </span>
+                        </div>
+                        <div className="d-flex justify-content-between align-items-center mt-3">
+                          <div><strong>{customerName(order)}</strong><span className="muted-line">{order.payment_method || "COD"}</span></div>
+                          <strong className="text-success">₹{money(orderTotal(order))}</strong>
+                        </div>
+                        <div className="payment-mobile-id">
+                          <small>Razorpay Payment ID</small>
+                          <span>{order.razorpay_payment_id || "Not available"}</span>
+                        </div>
+                        <button type="button" className="admin-action w-100 mt-2" onClick={() => setSelectedOrder(order)}>
+                          <FaEye className="me-2" /> View payment details
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!paymentRecords.length && (
+                  <div className="empty-state">
+                    <div className="empty-icon">💳</div>
+                    <h3 className="fw-bold">No payment records found</h3>
+                    <p>Try changing your search or payment status filter.</p>
+                  </div>
+                )}
+              </>
+            )}
+
             {tab === "customers" && (
               <>
                 <div className="section-head">
@@ -1262,7 +1531,7 @@ export default function Admin() {
                   </span>
                 </div>
 
-                <div className="section-body m-2">
+                <div className="section-body">
                   <div className="customer-list d-flex flex-wrap">
                     {safeUsers.map((user) => (
                       <div className="customer-card m-auto" key={user.id}>
@@ -1280,9 +1549,9 @@ export default function Admin() {
                         </div>
 
                         <div className="customer-info">
-                          <h5><span><FaPhone className="text-success" /> {user.phone || "No phone"}</span></h5>
-                          <h6><span><FaEnvelope className="text-success" /> {user.email || "No email"}</span></h6>
-                          <h6><span><FaMapMarkerAlt className="text-success" /> {user.city || "No city"}</span></h6>
+                          <span><FaPhone className="text-success" /> {user.phone || "No phone"}</span>
+                          <span><FaEnvelope className="text-success" /> {user.email || "No email"}</span>
+                          <span><FaMapMarkerAlt className="text-success" /> {user.city || "No city"}</span>
                         </div>
 
                         <div className="customer-footer">
@@ -1590,7 +1859,23 @@ export default function Admin() {
                 <div className="detail-box">
                   <div className="detail-label">Payment</div>
                   <div className="detail-value">
-                    {selectedOrder.payment_method || "COD"}
+                    <strong>{selectedOrder.payment_method || "COD"}</strong>
+                    <div className="text-muted fw-normal mt-1">
+                      Status: {selectedOrder.payment_status || "Pending"}
+                    </div>
+                    <div className="text-muted fw-normal mt-1">
+                      Amount: ₹{money(selectedOrder.total_amount ?? selectedOrder.total)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="detail-box full payment-details-box">
+                  <div className="detail-label">Payment Transaction Details</div>
+                  <div className="payment-detail-grid">
+                    <div><span>Razorpay Order ID</span><strong>{selectedOrder.razorpay_order_id || "Not available"}</strong></div>
+                    <div><span>Razorpay Payment ID</span><strong>{selectedOrder.razorpay_payment_id || "Not available"}</strong></div>
+                    <div className="signature-field"><span>Razorpay Signature</span><strong>{selectedOrder.razorpay_signature || "Not available"}</strong></div>
+                    <div><span>Payment Status</span><strong>{selectedOrder.payment_status || "Pending"}</strong></div>
                   </div>
                 </div>
 

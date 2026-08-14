@@ -7,6 +7,7 @@ import React, {
 } from "react";
 
 import { products } from "../data/products";
+
 import {
     supabase,
     supabaseConfigured,
@@ -16,6 +17,11 @@ const AppContext = createContext(null);
 
 const CART_KEY = "goo_cart";
 const THEME_KEY = "goo_theme";
+
+
+// =====================================================
+// LOCAL STORAGE HELPER
+// =====================================================
 
 const read = (key, fallback) => {
     try {
@@ -29,6 +35,7 @@ const read = (key, fallback) => {
     }
 };
 
+
 // =====================================================
 // MAP ORDER
 // =====================================================
@@ -36,6 +43,7 @@ const read = (key, fallback) => {
 const mapOrder = (o) => ({
     ...o,
 
+    // Supabase fields -> React fields
     userId: o.user_id,
 
     createdAt: o.created_at,
@@ -54,6 +62,31 @@ const mapOrder = (o) => ({
         o.total || 0
     ),
 
+    totalAmount: Number(
+        o.total_amount || o.total || 0
+    ),
+
+    paymentMethod:
+        o.payment_method || "cod",
+
+    paymentStatus:
+        o.payment_status || "Pending",
+
+    razorpayOrderId:
+        o.razorpay_order_id || null,
+
+    razorpayPaymentId:
+        o.razorpay_payment_id || null,
+
+    razorpaySignature:
+        o.razorpay_signature || null,
+
+    subscriptionId:
+        o.subscription_id || null,
+
+    subscriptionDeliveryDate:
+        o.subscription_delivery_date || null,
+
     slot: o.slot,
 
     frequency: o.frequency,
@@ -65,13 +98,17 @@ const mapOrder = (o) => ({
 
         email: o.customer_email,
 
-        address: o.address,
+        address:
+            o.address ||
+            o.delivery_address ||
+            "",
 
         city: o.city,
 
         pincode: o.pincode,
 
-        instructions: o.instructions,
+        instructions:
+            o.instructions || "",
     },
 
     items: (
@@ -86,13 +123,15 @@ const mapOrder = (o) => ({
         unit: i.unit,
 
         price: Number(
-            i.unit_price
+            i.unit_price || 0
         ),
 
-        qty: i.qty,
+        qty: Number(
+            i.qty || 0
+        ),
 
         lineTotal: Number(
-            i.line_total
+            i.line_total || 0
         ),
     })),
 
@@ -115,7 +154,7 @@ export function AppProvider({
 }) {
 
     // =================================================
-    // STATE
+    // AUTH / PROFILE STATE
     // =================================================
 
     const [
@@ -130,22 +169,50 @@ export function AppProvider({
         supabaseConfigured
     );
 
+
+    // =================================================
+    // ORDER STATE
+    // =================================================
+
     const [
         orders,
         setOrders,
     ] = useState([]);
 
     const [
+        ordersLoading,
+        setOrdersLoading,
+    ] = useState(false);
+
+
+    // =================================================
+    // USER STATE
+    // =================================================
+
+    const [
         users,
         setUsers,
     ] = useState([]);
+
+
+    // =================================================
+    // CART STATE
+    // =================================================
 
     const [
         cart,
         setCart,
     ] = useState(() =>
-        read(CART_KEY, [])
+        read(
+            CART_KEY,
+            []
+        )
     );
+
+
+    // =================================================
+    // THEME STATE
+    // =================================================
 
     const [
         theme,
@@ -156,6 +223,11 @@ export function AppProvider({
                 THEME_KEY
             ) || "light"
     );
+
+
+    // =================================================
+    // ERROR STATE
+    // =================================================
 
     const [
         cloudError,
@@ -284,6 +356,11 @@ export function AppProvider({
 
                     } catch (e) {
 
+                        console.error(
+                            "Profile loading error:",
+                            e
+                        );
+
                         setCloudError(
                             e.message
                         );
@@ -297,7 +374,6 @@ export function AppProvider({
                             );
 
                         }
-
                     }
                 }
             );
@@ -324,6 +400,10 @@ export function AppProvider({
                             null
                         );
 
+                        setOrders([]);
+
+                        setUsers([]);
+
                         return;
                     }
 
@@ -333,10 +413,17 @@ export function AppProvider({
                             loadProfile(
                                 session.user
                             ).catch(
-                                (e) =>
+                                (e) => {
+
+                                    console.error(
+                                        "Auth profile error:",
+                                        e
+                                    );
+
                                     setCloudError(
                                         e.message
-                                    )
+                                    );
+                                }
                             );
 
                         },
@@ -361,17 +448,20 @@ export function AppProvider({
     // FETCH ORDERS
     // =================================================
 
-    const fetchOrders =
-        async () => {
+    const fetchOrders = async () => {
 
-            if (
-                !supabase ||
-                !currentUser
-            ) {
+        if (
+            !supabase ||
+            !currentUser
+        ) {
 
-                return [];
+            return [];
 
-            }
+        }
+
+        setOrdersLoading(true);
+
+        try {
 
             const base =
                 "*, order_items(*), order_status_history(*)";
@@ -388,7 +478,10 @@ export function AppProvider({
                     );
 
 
-            // Customer sees only own orders
+            // -----------------------------------------
+            // CUSTOMER
+            // -----------------------------------------
+
             if (
                 currentUser.role !==
                 "admin"
@@ -399,9 +492,12 @@ export function AppProvider({
                         "user_id",
                         currentUser.id
                     );
-
             }
 
+
+            // -----------------------------------------
+            // FETCH
+            // -----------------------------------------
 
             const {
                 data,
@@ -410,9 +506,7 @@ export function AppProvider({
 
 
             if (error) {
-
                 throw error;
-
             }
 
 
@@ -425,54 +519,71 @@ export function AppProvider({
             setOrders(mapped);
 
             return mapped;
-        };
+
+        } catch (error) {
+
+            console.error(
+                "Fetch orders error:",
+                error
+            );
+
+            setCloudError(
+                error.message
+            );
+
+            throw error;
+
+        } finally {
+
+            setOrdersLoading(false);
+
+        }
+    };
 
 
     // =================================================
     // FETCH USERS
     // =================================================
 
-    const fetchUsers =
-        async () => {
+    const fetchUsers = async () => {
 
-            if (
-                !supabase ||
-                currentUser?.role !==
-                    "admin"
-            ) {
+        if (
+            !supabase ||
+            currentUser?.role !==
+                "admin"
+        ) {
 
-                return;
+            return;
 
-            }
+        }
 
-
-            const {
-                data,
-                error,
-            } = await supabase
-                .from("profiles")
-                .select(
-                    "id,name,phone,email,city,pincode,role,created_at"
-                )
-                .order(
-                    "created_at",
-                    {
-                        ascending: false,
-                    }
-                );
-
-
-            if (error) {
-
-                throw error;
-
-            }
-
-
-            setUsers(
-                data || []
+        const {
+            data,
+            error,
+        } = await supabase
+            .from("profiles")
+            .select(
+                "id,name,phone,email,city,pincode,role,created_at"
+            )
+            .order(
+                "created_at",
+                {
+                    ascending: false,
+                }
             );
-        };
+
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        setUsers(
+            data || []
+        );
+    };
 
 
     // =================================================
@@ -494,6 +605,9 @@ export function AppProvider({
         }
 
 
+        setCloudError("");
+
+
         Promise.all([
             fetchOrders(),
 
@@ -502,10 +616,17 @@ export function AppProvider({
                 ? fetchUsers()
                 : Promise.resolve(),
         ]).catch(
-            (e) =>
+            (e) => {
+
+                console.error(
+                    "Initial data load error:",
+                    e
+                );
+
                 setCloudError(
                     e.message
-                )
+                );
+            }
         );
 
     }, [
@@ -518,17 +639,14 @@ export function AppProvider({
     // REALTIME ORDER UPDATES
     // =================================================
     //
-    // This is the important part.
+    // Handles:
     //
-    // When Admin changes:
+    // INSERT
+    // UPDATE
+    // DELETE
     //
-    // Confirmed -> Cancelled
-    //
-    // Supabase sends an UPDATE event to every
-    // connected user's browser.
-    //
-    // The customer's AppContext then refreshes
-    // its orders automatically.
+    // This is what makes the customer's
+    // "My Orders" page update automatically.
     //
     // =================================================
 
@@ -547,104 +665,154 @@ export function AppProvider({
             `goo-orders-${currentUser.id}`;
 
 
+        console.log(
+            "Starting order realtime:",
+            channelName
+        );
+
+
         const channel =
             supabase
                 .channel(channelName)
 
+
+                // =====================================
+                // INSERT
+                // =====================================
+
                 .on(
                     "postgres_changes",
                     {
-                        event: "*",
+                        event: "INSERT",
                         schema: "public",
                         table: "orders",
                     },
                     async (payload) => {
 
                         console.log(
-                            "Goo Amrutham order realtime update:",
+                            "ORDER INSERT:",
                             payload
                         );
 
 
-                        // ---------------------------------
-                        // UPDATE LOCAL ORDER IMMEDIATELY
-                        // ---------------------------------
+                        const newOrder =
+                            payload.new;
 
+
+                        // Customer should only receive
+                        // their own order.
                         if (
-                            payload.eventType ===
-                            "UPDATE"
+                            currentUser.role !==
+                                "admin" &&
+                            String(
+                                newOrder.user_id
+                            ) !==
+                                String(
+                                    currentUser.id
+                                )
                         ) {
 
-                            const updated =
-                                payload.new;
+                            return;
+                        }
 
 
-                            // Customer should only receive
-                            // their own order changes.
-                            if (
-                                currentUser.role !==
-                                    "admin" &&
-                                String(
-                                    updated.user_id
-                                ) !==
-                                    String(
-                                        currentUser.id
-                                    )
-                            ) {
+                        try {
 
-                                return;
+                            await fetchOrders();
 
-                            }
+                        } catch (e) {
 
-
-                            setOrders(
-                                (
-                                    previous
-                                ) =>
-                                    previous.map(
-                                        (
-                                            order
-                                        ) =>
-                                            String(
-                                                order.id
-                                            ) ===
-                                            String(
-                                                updated.id
-                                            )
-                                                ? {
-                                                    ...order,
-
-                                                    ...mapOrder(
-                                                        {
-                                                            ...updated,
-
-                                                            order_items:
-                                                                order.order_items ||
-                                                                [],
-
-                                                            order_status_history:
-                                                                order.order_status_history ||
-                                                                [],
-                                                        }
-                                                    ),
-                                                }
-                                                : order
-                                    )
+                            console.error(
+                                "Realtime INSERT error:",
+                                e
                             );
+                        }
+                    }
+                )
 
+
+                // =====================================
+                // UPDATE
+                // =====================================
+
+                .on(
+                    "postgres_changes",
+                    {
+                        event: "UPDATE",
+                        schema: "public",
+                        table: "orders",
+                    },
+                    async (payload) => {
+
+                        console.log(
+                            "ORDER UPDATE:",
+                            payload
+                        );
+
+
+                        const updated =
+                            payload.new;
+
+
+                        // Customer should only receive
+                        // their own order.
+                        if (
+                            currentUser.role !==
+                                "admin" &&
+                            String(
+                                updated.user_id
+                            ) !==
+                                String(
+                                    currentUser.id
+                                )
+                        ) {
+
+                            return;
                         }
 
 
                         // ---------------------------------
-                        // REFRESH COMPLETE ORDER DATA
+                        // UPDATE UI IMMEDIATELY
                         // ---------------------------------
-                        //
-                        // This loads order_items and
-                        // order_status_history again.
-                        //
-                        // This is especially important
-                        // when status history is updated.
-                        //
+
+                        setOrders(
+                            (previous) =>
+                                previous.map(
+                                    (
+                                        order
+                                    ) =>
+                                        String(
+                                            order.id
+                                        ) ===
+                                        String(
+                                            updated.id
+                                        )
+                                            ? {
+                                                ...order,
+
+                                                ...mapOrder(
+                                                    {
+                                                        ...updated,
+
+                                                        // Preserve already
+                                                        // loaded relationships
+                                                        order_items:
+                                                            order.order_items ||
+                                                            [],
+
+                                                        order_status_history:
+                                                            order.order_status_history ||
+                                                            [],
+                                                    }
+                                                ),
+                                            }
+                                            : order
+                                )
+                        );
+
+
+                        // ---------------------------------
+                        // LOAD COMPLETE ORDER
                         // ---------------------------------
 
                         try {
@@ -654,31 +822,121 @@ export function AppProvider({
                         } catch (e) {
 
                             console.error(
-                                "Realtime order refresh error:",
+                                "Realtime UPDATE refresh error:",
                                 e
                             );
-
-                            setCloudError(
-                                e.message
-                            );
-
                         }
-
                     }
                 )
+
+
+                // =====================================
+                // DELETE
+                // =====================================
+
+                .on(
+                    "postgres_changes",
+                    {
+                        event: "DELETE",
+                        schema: "public",
+                        table: "orders",
+                    },
+                    (payload) => {
+
+                        console.log(
+                            "ORDER DELETE:",
+                            payload
+                        );
+
+
+                        const deletedId =
+                            payload.old?.id;
+
+
+                        // ---------------------------------
+                        // If Supabase doesn't provide
+                        // the deleted ID, refresh instead.
+                        // ---------------------------------
+
+                        if (!deletedId) {
+
+                            console.warn(
+                                "DELETE event has no ID. Refreshing orders."
+                            );
+
+                            fetchOrders().catch(
+                                (e) => {
+
+                                    console.error(
+                                        "DELETE fallback error:",
+                                        e
+                                    );
+                                }
+                            );
+
+                            return;
+                        }
+
+
+                        // ---------------------------------
+                        // REMOVE FROM REACT STATE
+                        // ---------------------------------
+                        //
+                        // This is the important fix.
+                        //
+                        // Customer's My Orders will
+                        // immediately remove the deleted
+                        // order without refreshing.
+                        //
+                        // ---------------------------------
+
+                        setOrders(
+                            (previous) =>
+                                previous.filter(
+                                    (order) =>
+                                        String(
+                                            order.id
+                                        ) !==
+                                        String(
+                                            deletedId
+                                        )
+                                )
+                        );
+
+
+                        console.log(
+                            "Deleted order removed from UI:",
+                            deletedId
+                        );
+                    }
+                )
+
+
+                // =====================================
+                // SUBSCRIBE
+                // =====================================
 
                 .subscribe(
                     (status) => {
 
                         console.log(
-                            `Orders realtime subscription: ${status}`
+                            `Goo Amrutham Orders Realtime: ${status}`
                         );
 
                     }
                 );
 
 
+        // =========================================
+        // CLEANUP
+        // =========================================
+
         return () => {
+
+            console.log(
+                "Removing order realtime channel:",
+                channelName
+            );
 
             supabase.removeChannel(
                 channel
@@ -696,240 +954,231 @@ export function AppProvider({
     // REGISTER
     // =================================================
 
-    const register =
-        async (payload) => {
+    const register = async (
+        payload
+    ) => {
 
-            if (!supabase) {
+        if (!supabase) {
 
-                throw new Error(
-                    "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
-                );
+            throw new Error(
+                "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+            );
+        }
 
-            }
 
+        const {
+            data,
+            error,
+        } =
+            await supabase.auth.signUp(
+                {
+                    email:
+                        payload.email
+                            .trim()
+                            .toLowerCase(),
 
-            const {
-                data,
-                error,
-            } =
-                await supabase.auth.signUp(
-                    {
-                        email:
-                            payload.email
-                                .trim()
-                                .toLowerCase(),
+                    password:
+                        payload.password,
 
-                        password:
-                            payload.password,
+                    options: {
+                        data: {
+                            name:
+                                payload.name.trim(),
 
-                        options: {
-                            data: {
-                                name:
-                                    payload.name.trim(),
-
-                                phone:
-                                    payload.phone.trim(),
-                            },
+                            phone:
+                                payload.phone.trim(),
                         },
-                    }
-                );
+                    },
+                }
+            );
 
 
-            if (error) {
+        if (error) {
 
-                throw error;
+            throw error;
 
-            }
+        }
 
 
-            if (
-                data.session &&
+        if (
+            data.session &&
+            data.user
+        ) {
+
+            await loadProfile(
                 data.user
-            ) {
-
-                await loadProfile(
-                    data.user
-                );
-
-            }
+            );
+        }
 
 
-            return {
-                needsEmailConfirmation:
-                    !data.session,
-            };
+        return {
+            needsEmailConfirmation:
+                !data.session,
         };
+    };
 
 
     // =================================================
     // LOGIN
     // =================================================
 
-    const login =
-        async (
-            email,
-            password
-        ) => {
+    const login = async (
+        email,
+        password
+    ) => {
 
-            if (!supabase) {
+        if (!supabase) {
 
-                throw new Error(
-                    "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
-                );
-
-            }
+            throw new Error(
+                "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+            );
+        }
 
 
-            const {
-                data,
-                error,
-            } =
-                await supabase.auth.signInWithPassword(
-                    {
-                        email:
-                            email
-                                .trim()
-                                .toLowerCase(),
+        const {
+            data,
+            error,
+        } =
+            await supabase.auth.signInWithPassword(
+                {
+                    email:
+                        email
+                            .trim()
+                            .toLowerCase(),
 
-                        password,
-                    }
-                );
-
-
-            if (error) {
-
-                throw error;
-
-            }
+                    password,
+                }
+            );
 
 
-            if (data.user) {
+        if (error) {
 
-                return loadProfile(
-                    data.user
-                );
+            throw error;
 
-            }
+        }
 
-        };
+
+        if (data.user) {
+
+            return loadProfile(
+                data.user
+            );
+        }
+
+    };
 
 
     // =================================================
     // LOGOUT
     // =================================================
 
-    const logout =
-        async () => {
+    const logout = async () => {
 
-            if (supabase) {
+        if (supabase) {
 
-                await supabase.auth.signOut();
+            await supabase.auth.signOut();
 
-            }
+        }
 
-            setCurrentUser(
-                null
-            );
+        setCurrentUser(
+            null
+        );
 
-            setOrders([]);
+        setOrders([]);
 
-            setUsers([]);
+        setUsers([]);
 
-        };
+        setCloudError("");
+
+    };
 
 
     // =================================================
     // CART
     // =================================================
 
-    const addToCart =
-        (
-            productId,
-            qty = 1
-        ) => {
+    const addToCart = (
+        productId,
+        qty = 1
+    ) => {
 
-            setCart(
-                (previous) => {
+        setCart(
+            (previous) => {
 
-                    const found =
-                        previous.find(
-                            (item) =>
-                                item.productId ===
-                                productId
-                        );
-
-
-                    if (found) {
-
-                        return previous.map(
-                            (item) =>
-                                item.productId ===
-                                productId
-                                    ? {
-                                        ...item,
-
-                                        qty:
-                                            item.qty +
-                                            qty,
-                                    }
-                                    : item
-                        );
-
-                    }
+                const found =
+                    previous.find(
+                        (item) =>
+                            item.productId ===
+                            productId
+                    );
 
 
-                    return [
-                        ...previous,
+                if (found) {
 
-                        {
-                            productId,
+                    return previous.map(
+                        (item) =>
+                            item.productId ===
+                            productId
+                                ? {
+                                    ...item,
 
-                            qty,
-                        },
-                    ];
-
-                }
-            );
-
-        };
-
-
-    const updateCart =
-        (
-            productId,
-            qty
-        ) => {
-
-            setCart(
-                (previous) =>
-                    qty <= 0
-                        ? previous.filter(
-                            (item) =>
-                                item.productId !==
-                                productId
-                        )
-                        : previous.map(
-                            (item) =>
-                                item.productId ===
-                                productId
-                                    ? {
-                                        ...item,
-
+                                    qty:
+                                        item.qty +
                                         qty,
-                                    }
-                                    : item
-                        )
-            );
-
-        };
+                                }
+                                : item
+                    );
+                }
 
 
-    const clearCart =
-        () => {
+                return [
+                    ...previous,
 
-            setCart([]);
+                    {
+                        productId,
 
-        };
+                        qty,
+                    },
+                ];
+
+            }
+        );
+    };
+
+
+    const updateCart = (
+        productId,
+        qty
+    ) => {
+
+        setCart(
+            (previous) =>
+                qty <= 0
+                    ? previous.filter(
+                        (item) =>
+                            item.productId !==
+                            productId
+                    )
+                    : previous.map(
+                        (item) =>
+                            item.productId ===
+                            productId
+                                ? {
+                                    ...item,
+
+                                    qty,
+                                }
+                                : item
+                    )
+        );
+    };
+
+
+    const clearCart = () => {
+
+        setCart([]);
+
+    };
 
 
     // =================================================
@@ -974,6 +1223,10 @@ export function AppProvider({
         );
 
 
+    // =================================================
+    // CART TOTAL
+    // =================================================
+
     const cartTotal =
         cartItems.reduce(
             (
@@ -986,6 +1239,10 @@ export function AppProvider({
         );
 
 
+    // =================================================
+    // DELIVERY FEE
+    // =================================================
+
     const deliveryFee =
         cartTotal >= 200 ||
         cartTotal === 0
@@ -997,131 +1254,130 @@ export function AppProvider({
     // CREATE ORDER
     // =================================================
 
-    const createOrder =
-        async (
-            customer
-        ) => {
+    const createOrder = async (
+        customer
+    ) => {
 
-            if (
-                !supabase ||
-                !currentUser
-            ) {
+        if (
+            !supabase ||
+            !currentUser
+        ) {
 
-                throw new Error(
-                    "Please sign in before ordering."
-                );
-
-            }
+            throw new Error(
+                "Please sign in before ordering."
+            );
+        }
 
 
-            if (
-                !cartItems.length
-            ) {
+        if (
+            !cartItems.length
+        ) {
 
-                throw new Error(
-                    "Your cart is empty."
-                );
-
-            }
-
-
-            const payload =
-                cartItems.map(
-                    (item) => ({
-                        product_id:
-                            item.id,
-
-                        qty:
-                            item.qty,
-                    })
-                );
+            throw new Error(
+                "Your cart is empty."
+            );
+        }
 
 
-            const {
-                data,
-                error,
-            } =
-                await supabase.rpc(
-                    "create_order",
-                    {
-                        p_items:
-                            payload,
+        const payload =
+            cartItems.map(
+                (item) => ({
+                    product_id:
+                        item.id,
 
-                        p_customer: {
-                            name:
-                                customer.name,
-
-                            phone:
-                                customer.phone,
-
-                            email:
-                                customer.email,
-
-                            address:
-                                customer.address,
-
-                            city:
-                                customer.city,
-
-                            pincode:
-                                customer.pincode,
-                        },
-
-                        p_slot:
-                            customer.slot,
-
-                        p_frequency:
-                            customer.frequency,
-
-                        p_instructions:
-                            customer.instructions ||
-                            "",
-                    }
-                );
+                    qty:
+                        item.qty,
+                })
+            );
 
 
-            if (error) {
+        const {
+            data,
+            error,
+        } =
+            await supabase.rpc(
+                "create_order",
+                {
+                    p_items:
+                        payload,
 
-                throw error;
+                    p_customer: {
+                        name:
+                            customer.name,
 
-            }
+                        phone:
+                            customer.phone,
 
+                        email:
+                            customer.email,
 
-            clearCart();
+                        address:
+                            customer.address,
 
+                        city:
+                            customer.city,
 
-            const result =
-                typeof data ===
-                "string"
-                    ? {
-                        id: data,
-                    }
-                    : data;
+                        pincode:
+                            customer.pincode,
+                    },
 
+                    p_slot:
+                        customer.slot,
 
-            const loaded =
-                await fetchOrders();
+                    p_frequency:
+                        customer.frequency,
 
-
-            const created =
-                loaded.find(
-                    (order) =>
-                        order.id ===
-                        result.id
-                );
-
-
-            return (
-                created || {
-                    id:
-                        result.id,
-
-                    order_number:
-                        result.order_number,
+                    p_instructions:
+                        customer.instructions ||
+                        "",
+                    p_payment_method:
+                         customer.paymentMethod || 
+                         "cod",
                 }
             );
 
-        };
+
+        if (error) {
+
+            throw error;
+
+        }
+
+
+        clearCart();
+
+
+        const result =
+            typeof data ===
+            "string"
+                ? {
+                    id: data,
+                }
+                : data;
+
+
+        const loaded =
+            await fetchOrders();
+
+
+        const created =
+            loaded.find(
+                (order) =>
+                    order.id ===
+                    result.id
+            );
+
+
+        return (
+            created || {
+                id:
+                    result.id,
+
+                order_number:
+                    result.order_number,
+            }
+        );
+    };
 
 
     // =================================================
@@ -1143,7 +1399,6 @@ export function AppProvider({
                 throw new Error(
                     "Admin access required."
                 );
-
             }
 
 
@@ -1169,30 +1424,86 @@ export function AppProvider({
             }
 
 
-            // Refresh admin's own orders
+            // Refresh admin's orders
             await fetchOrders();
-
         };
 
-        const deleteOrder = async (orderId) => {
-    if (!supabase || currentUser?.role !== "admin") {
-        throw new Error("Admin access required.");
-    }
 
-    if (!orderId) {
-        throw new Error("Order ID is required.");
-    }
+    // =================================================
+    // DELETE ORDER
+    // =================================================
 
-    const { error } = await supabase.rpc("delete_order", {
-        p_order_id: orderId,
-    });
+    const deleteOrder =
+        async (
+            orderId
+        ) => {
 
-    if (error) {
-        throw error;
-    }
+            if (
+                !supabase ||
+                currentUser?.role !==
+                    "admin"
+            ) {
 
-    await fetchOrders();
-};
+                throw new Error(
+                    "Admin access required."
+                );
+            }
+
+
+            if (!orderId) {
+
+                throw new Error(
+                    "Order ID is required."
+                );
+            }
+
+
+            // -----------------------------------------
+            // DELETE FROM SUPABASE
+            // -----------------------------------------
+
+            const {
+                error,
+            } =
+                await supabase.rpc(
+                    "delete_order",
+                    {
+                        p_order_id:
+                            orderId,
+                    }
+                );
+
+
+            if (error) {
+
+                throw error;
+
+            }
+
+
+            // -----------------------------------------
+            // REMOVE IMMEDIATELY FROM ADMIN UI
+            // -----------------------------------------
+
+            setOrders(
+                (previous) =>
+                    previous.filter(
+                        (order) =>
+                            String(
+                                order.id
+                            ) !==
+                            String(
+                                orderId
+                            )
+                    )
+            );
+
+
+            console.log(
+                "Order successfully deleted:",
+                orderId
+            );
+        };
 
 
     // =================================================
@@ -1210,11 +1521,11 @@ export function AppProvider({
             ) {
 
                 return;
-
             }
 
 
             const allowed = {
+
                 name:
                     patch.name?.trim(),
 
@@ -1259,8 +1570,18 @@ export function AppProvider({
             setCurrentUser(
                 data
             );
-
         };
+
+
+    // =================================================
+    // CLEAR CLOUD ERROR
+    // =================================================
+
+    const clearCloudError = () => {
+
+        setCloudError("");
+
+    };
 
 
     // =================================================
@@ -1268,6 +1589,10 @@ export function AppProvider({
     // =================================================
 
     const value = {
+
+        // ---------------------------------------------
+        // DATA
+        // ---------------------------------------------
 
         users,
 
@@ -1287,11 +1612,25 @@ export function AppProvider({
 
         profileLoading,
 
+        ordersLoading,
+
         cloudError,
 
         supabaseConfigured,
 
+
+        // ---------------------------------------------
+        // SETTINGS
+        // ---------------------------------------------
+
         setTheme,
+
+        clearCloudError,
+
+
+        // ---------------------------------------------
+        // AUTH
+        // ---------------------------------------------
 
         register,
 
@@ -1299,11 +1638,21 @@ export function AppProvider({
 
         logout,
 
+
+        // ---------------------------------------------
+        // CART
+        // ---------------------------------------------
+
         addToCart,
 
         updateCart,
 
         clearCart,
+
+
+        // ---------------------------------------------
+        // ORDERS
+        // ---------------------------------------------
 
         createOrder,
 
@@ -1311,16 +1660,29 @@ export function AppProvider({
 
         deleteOrder,
 
-        updateProfile,
-
         refreshOrders:
             fetchOrders,
+
+
+        // ---------------------------------------------
+        // USERS
+        // ---------------------------------------------
 
         refreshUsers:
             fetchUsers,
 
+
+        // ---------------------------------------------
+        // PROFILE
+        // ---------------------------------------------
+
+        updateProfile,
     };
 
+
+    // =================================================
+    // PROVIDER
+    // =================================================
 
     return (
         <AppContext.Provider
@@ -1336,8 +1698,7 @@ export function AppProvider({
 // USE APP
 // =====================================================
 
-export const useApp =
-    () =>
-        useContext(
-            AppContext
-        );
+export const useApp = () =>
+    useContext(
+        AppContext
+    );

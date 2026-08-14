@@ -7,10 +7,40 @@ import {
   FaUser,
   FaCheckCircle,
   FaArrowLeft,
+  FaMoneyBillWave,
+  FaCreditCard,
 } from "react-icons/fa";
 
 import { supabase } from "../lib/supabase";
 import { useApp } from "../context/AppContext";
+
+/* =====================================================
+   LOAD RAZORPAY CHECKOUT
+===================================================== */
+
+const loadRazorpay = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+
+    script.src =
+      "https://checkout.razorpay.com/v1/checkout.js";
+
+    script.onload = () => resolve(true);
+
+    script.onerror = () => resolve(false);
+
+    document.body.appendChild(script);
+  });
+};
+
+/* =====================================================
+   CHECKOUT COMPONENT
+===================================================== */
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -22,10 +52,19 @@ export default function Checkout() {
   } = useApp();
 
   const [loading, setLoading] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
+
+  const [orderSuccess, setOrderSuccess] =
+    useState(false);
+
   const [successOrderNumber, setSuccessOrderNumber] =
     useState("");
-  const [errorMessage, setErrorMessage] = useState("");
+
+  const [errorMessage, setErrorMessage] =
+    useState("");
+
+  /* =====================================================
+     FORM
+  ===================================================== */
 
   const [form, setForm] = useState({
     name: currentUser?.name || "",
@@ -36,7 +75,25 @@ export default function Checkout() {
     notes: "",
     slot: "Morning",
     frequency: "Daily",
+
+    // NEW:
+    // razorpay = online payment
+    // cod = cash on delivery
+    paymentMethod: "razorpay",
   });
+
+  /* =====================================================
+     UPDATE FORM
+  ===================================================== */
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    setForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
 
   /* =====================================================
      SUBTOTAL
@@ -53,52 +110,268 @@ export default function Checkout() {
 
   /* =====================================================
      DELIVERY FEE
+
+     ₹500 or more = FREE
+     Below ₹500 = ₹20
   ===================================================== */
 
-  const deliveryFee = subtotal >= 500 ? 0 : 20;
+  const deliveryFee =
+    subtotal >= 500 ? 0 : 20;
 
   /* =====================================================
      TOTAL
   ===================================================== */
 
-  const total = subtotal + deliveryFee;
+  const total =
+    subtotal + deliveryFee;
 
   /* =====================================================
-     HANDLE INPUT
+     CHECK PRODUCT AVAILABILITY
   ===================================================== */
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const checkProductAvailability = async () => {
+    if (
+      !cartItems ||
+      cartItems.length === 0
+    ) {
+      return {
+        available: false,
+        message: "Your cart is empty.",
+      };
+    }
 
-    setForm((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
+    const itemsPayload =
+      cartItems.map((item) => ({
+        product_id: String(
+          item.id ||
+            item.product_id
+        ),
+
+        qty: Number(
+          item.qty || 1
+        ),
+      }));
+
+    const {
+      data,
+      error,
+    } = await supabase.rpc(
+      "check_order_availability",
+      {
+        p_items: itemsPayload,
+      }
+    );
+
+    if (error) {
+      console.error(
+        "Product availability check error:",
+        error
+      );
+
+      throw new Error(
+        "Unable to check product availability. Please try again."
+      );
+    }
+
+    if (
+      !data?.success ||
+      data?.available !== true
+    ) {
+      return {
+        available: false,
+
+        message:
+          data?.message ||
+          "A selected product is unavailable.",
+      };
+    }
+
+    return {
+      available: true,
+      message: "",
+    };
   };
 
   /* =====================================================
-     ORDER NUMBER
+     CREATE ORDER
+
+     Used by BOTH:
+
+     1. Cash on Delivery
+     2. Razorpay after successful verification
   ===================================================== */
 
-  const generateOrderNumber = () => {
-    const date = new Date();
+  const createGooOrder = async (
+    user,
+    paymentMethod,
+    razorpayData = null
+  ) => {
+    const itemsPayload =
+      cartItems.map((item) => ({
+        product_id: String(
+          item.id ||
+            item.product_id
+        ),
 
-    const year = date.getFullYear();
+        qty: Number(
+          item.qty || 1
+        ),
+      }));
 
-    const month = String(
-      date.getMonth() + 1
-    ).padStart(2, "0");
+    const {
+      data: createdOrder,
+      error: createOrderError,
+    } =
+      await supabase.rpc(
+        "create_order",
+        {
+          p_items:
+            itemsPayload,
 
-    const day = String(
-      date.getDate()
-    ).padStart(2, "0");
+          p_customer: {
+            name:
+              form.name.trim(),
 
-    const random = Math.random()
-      .toString(36)
-      .substring(2, 8)
-      .toUpperCase();
+            phone:
+              form.phone.trim(),
 
-    return `GAM-${year}${month}${day}-${random}`;
+            email:
+              user.email || "",
+
+            address:
+              form.address.trim(),
+
+            city:
+              form.city.trim(),
+
+            pincode:
+              form.pincode.trim(),
+          },
+
+          p_slot:
+            form.slot,
+
+          p_frequency:
+            form.frequency,
+
+          p_instructions:
+            form.notes.trim(),
+
+          /*
+             NEW PAYMENT METHOD
+
+             "cod"
+             or
+             "razorpay"
+          */
+          p_payment_method:
+            paymentMethod,
+        }
+      );
+
+    if (createOrderError) {
+      console.error(
+        "Create order error:",
+        createOrderError
+      );
+
+      throw createOrderError;
+    }
+
+    const orderId =
+      typeof createdOrder ===
+      "string"
+        ? createdOrder
+        : createdOrder?.id;
+
+    const orderNumber =
+      createdOrder?.order_number ||
+      "";
+
+    if (!orderId) {
+      throw new Error(
+        "Order was created but the order ID could not be found."
+      );
+    }
+
+    /* =================================================
+       FINALIZE RAZORPAY PAYMENT
+       
+       COD DOES NOT COME HERE.
+    ================================================= */
+
+    if (
+      paymentMethod ===
+        "razorpay" &&
+      razorpayData
+    ) {
+      const {
+        error:
+          paymentFinalizeError,
+      } =
+        await supabase.rpc(
+          "finalize_order_payment",
+          {
+            p_order_id:
+              orderId,
+
+            p_razorpay_order_id:
+              razorpayData.razorpay_order_id,
+
+            p_razorpay_payment_id:
+              razorpayData.razorpay_payment_id,
+
+            p_razorpay_signature:
+              razorpayData.razorpay_signature,
+          }
+        );
+
+      if (paymentFinalizeError) {
+        console.error(
+          "Payment finalization error:",
+          paymentFinalizeError
+        );
+
+        throw paymentFinalizeError;
+      }
+    }
+
+    return {
+      id: orderId,
+      orderNumber,
+    };
+  };
+
+  /* =====================================================
+     COMPLETE SUCCESS
+  ===================================================== */
+
+  const completeOrderSuccess = (
+    orderNumber
+  ) => {
+    clearCart();
+
+    setSuccessOrderNumber(
+      orderNumber ||
+        "Order Placed"
+    );
+
+    setOrderSuccess(true);
+
+    setLoading(false);
+
+    setTimeout(() => {
+      navigate("/orders");
+
+      /*
+         Give AppContext a moment to fetch the
+         newly created order.
+      */
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 300);
+    }, 2500);
   };
 
   /* =====================================================
@@ -123,7 +396,10 @@ export default function Checkout() {
        CART CHECK
     ----------------------------------------------- */
 
-    if (!cartItems || cartItems.length === 0) {
+    if (
+      !cartItems ||
+      cartItems.length === 0
+    ) {
       navigate("/products");
       return;
     }
@@ -146,53 +422,201 @@ export default function Checkout() {
       return;
     }
 
+    /* -----------------------------------------------
+       PAYMENT METHOD VALIDATION
+    ----------------------------------------------- */
+
+    if (
+      ![
+        "razorpay",
+        "cod",
+      ].includes(
+        form.paymentMethod
+      )
+    ) {
+      setErrorMessage(
+        "Please select a valid payment method."
+      );
+
+      return;
+    }
+
     try {
       setLoading(true);
 
-      /* ---------------------------------------------
-         GET SUPABASE USER
-      --------------------------------------------- */
+      /* =================================================
+         CHECK PRODUCT AVAILABILITY FIRST
+      ================================================= */
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const availability =
+        await checkProductAvailability();
 
-      if (userError || !user) {
-        navigate("/login");
+      if (
+        !availability.available
+      ) {
+        setErrorMessage(
+          availability.message
+        );
+
+        setLoading(false);
+
         return;
       }
 
-      /* ---------------------------------------------
-         ORDER NUMBER
-      --------------------------------------------- */
-
-      const orderNumber =
-        generateOrderNumber();
-
-      /* ---------------------------------------------
-         CREATE ORDER
-      --------------------------------------------- */
+      /* =================================================
+         GET SUPABASE USER
+      ================================================= */
 
       const {
-        data: order,
-        error: orderError,
-      } = await supabase
-        .from("orders")
-        .insert({
-          user_id: user.id,
+        data: {
+          user,
+        },
+        error: userError,
+      } =
+        await supabase.auth.getUser();
 
-          order_number: orderNumber,
+      if (
+        userError ||
+        !user
+      ) {
+        navigate("/login");
 
-          customer_name:
+        setLoading(false);
+
+        return;
+      }
+
+      /* =================================================
+         CASH ON DELIVERY
+         
+         IMPORTANT:
+         COD DOES NOT LOAD RAZORPAY.
+      ================================================= */
+
+      if (
+        form.paymentMethod ===
+        "cod"
+      ) {
+        try {
+          const created =
+            await createGooOrder(
+              user,
+              "cod"
+            );
+
+          completeOrderSuccess(
+            created.orderNumber
+          );
+
+          return;
+        } catch (codError) {
+          console.error(
+            "COD order error:",
+            codError
+          );
+
+          throw codError;
+        }
+      }
+
+      /* =================================================
+         ONLINE PAYMENT
+         
+         Everything below this point is Razorpay.
+      ================================================= */
+
+      const razorpayLoaded =
+        await loadRazorpay();
+
+      if (!razorpayLoaded) {
+        throw new Error(
+          "Unable to load Razorpay. Please check your internet connection and try again."
+        );
+      }
+
+      /* =================================================
+         CREATE RAZORPAY ORDER
+      ================================================= */
+
+      const {
+        data: razorpayOrder,
+        error:
+          razorpayOrderError,
+      } =
+        await supabase.functions.invoke(
+          "create-razorpay-order",
+          {
+            body: {
+              amount: Number(
+                total.toFixed(2)
+              ),
+
+              receipt:
+                `GAM-${Date.now()}`,
+            },
+          }
+        );
+
+      if (
+        razorpayOrderError
+      ) {
+        console.error(
+          "Razorpay order error:",
+          razorpayOrderError
+        );
+
+        throw new Error(
+          razorpayOrderError.message ||
+            "Unable to create payment order."
+        );
+      }
+
+      if (
+        !razorpayOrder?.success ||
+        !razorpayOrder?.order_id
+      ) {
+        throw new Error(
+          razorpayOrder?.error ||
+            "Unable to create Razorpay order."
+        );
+      }
+
+      /* =================================================
+         RAZORPAY OPTIONS
+      ================================================= */
+
+      const options = {
+        key:
+          razorpayOrder.key_id,
+
+        amount:
+          razorpayOrder.amount,
+
+        currency:
+          razorpayOrder.currency ||
+          "INR",
+
+        name:
+          "Goo Amrutham Milk",
+
+        description:
+          "Fresh Natural Milk Order",
+
+        order_id:
+          razorpayOrder.order_id,
+
+        prefill: {
+          name:
             form.name.trim(),
 
-          customer_phone:
-            form.phone.trim(),
-
-          customer_email:
+          email:
             user.email || "",
 
+          contact:
+            form.phone.trim(),
+        },
+
+        notes: {
           address:
             form.address.trim(),
 
@@ -201,175 +625,165 @@ export default function Checkout() {
 
           pincode:
             form.pincode.trim(),
+        },
 
-          instructions:
-            form.notes.trim(),
+        theme: {
+          color:
+            "#198754",
+        },
 
-          slot:
-            form.slot,
+        /* ---------------------------------------------
+           PAYMENT WINDOW CLOSED
+        --------------------------------------------- */
 
-          frequency:
-            form.frequency,
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
 
-          subtotal:
-            Number(
-              subtotal.toFixed(2)
-            ),
+            setErrorMessage(
+              "Payment was cancelled. Your order has not been placed."
+            );
+          },
+        },
 
-          delivery_fee:
-            Number(
-              deliveryFee.toFixed(2)
-            ),
+        /* ---------------------------------------------
+           PAYMENT SUCCESS
+        --------------------------------------------- */
 
-          total:
-            Number(
-              total.toFixed(2)
-            ),
+        handler:
+          async function (
+            response
+          ) {
+            try {
+              setLoading(true);
 
-          /* IMPORTANT */
-          status: "Order Placed",
-        })
-        .select()
-        .single();
+              setErrorMessage("");
 
-      if (orderError) {
-        console.error(
-          "Order creation error:",
-          orderError
+              /* =========================================
+                 VERIFY RAZORPAY PAYMENT
+              ========================================= */
+
+              const {
+                data:
+                  verification,
+                error:
+                  verificationError,
+              } =
+                await supabase.functions.invoke(
+                  "verify-razorpay-payment",
+                  {
+                    body: {
+                      razorpay_order_id:
+                        response.razorpay_order_id,
+
+                      razorpay_payment_id:
+                        response.razorpay_payment_id,
+
+                      razorpay_signature:
+                        response.razorpay_signature,
+                    },
+                  }
+                );
+
+              if (
+                verificationError
+              ) {
+                console.error(
+                  "Payment verification error:",
+                  verificationError
+                );
+
+                throw new Error(
+                  verificationError.message ||
+                    "Payment verification failed."
+                );
+              }
+
+              if (
+                !verification?.success ||
+                !verification?.verified
+              ) {
+                throw new Error(
+                  verification?.error ||
+                    "Payment could not be verified."
+                );
+              }
+
+              /* =========================================
+                 PAYMENT VERIFIED
+                 
+                 NOW CREATE GOO AMRUTHAM ORDER
+              ========================================= */
+
+              const created =
+                await createGooOrder(
+                  user,
+                  "razorpay",
+                  response
+                );
+
+              /* =========================================
+                 SUCCESS
+              ========================================= */
+
+              completeOrderSuccess(
+                created.orderNumber ||
+                  response.razorpay_order_id
+              );
+            } catch (error) {
+              console.error(
+                "Payment completion error:",
+                error
+              );
+
+              setErrorMessage(
+                error?.message ||
+                  "Payment was successful, but we could not complete your order. Please contact Goo Amrutham support."
+              );
+
+              setLoading(false);
+            }
+          },
+      };
+
+      /* =================================================
+         CREATE RAZORPAY INSTANCE
+      ================================================= */
+
+      const razorpay =
+        new window.Razorpay(
+          options
         );
 
-        throw orderError;
-      }
+      /* =================================================
+         PAYMENT FAILED
+      ================================================= */
 
-      /* ---------------------------------------------
-         CREATE ORDER ITEMS
-         
-         IMPORTANT:
-         These names EXACTLY match your Supabase table:
-         
-         order_id
-         product_id
-         name
-         unit
-         unit_price
-         qty
-         line_total
-      --------------------------------------------- */
-
-      const orderItems = cartItems.map(
-        (item) => {
-          const quantity = Number(
-            item.qty || 1
+      razorpay.on(
+        "payment.failed",
+        function (
+          response
+        ) {
+          console.error(
+            "Razorpay payment failed:",
+            response
           );
 
-          const price = Number(
-            item.price || 0
+          setLoading(false);
+
+          setErrorMessage(
+            response?.error
+              ?.description ||
+              "Payment failed. Your order has not been placed."
           );
-
-          return {
-            order_id: order.id,
-
-            product_id: item.id
-              ? String(item.id)
-              : null,
-
-            name:
-              item.name ||
-              "Milk Product",
-
-            unit:
-              item.unit || "",
-
-            unit_price:
-              price,
-
-            qty:
-              quantity,
-
-            line_total:
-              Number(
-                (
-                  price * quantity
-                ).toFixed(2)
-              ),
-          };
         }
       );
 
-      const {
-        error: itemsError,
-      } = await supabase
-        .from("order_items")
-        .insert(orderItems);
+      /* =================================================
+         OPEN PAYMENT WINDOW
+      ================================================= */
 
-      if (itemsError) {
-        console.error(
-          "Order items error:",
-          itemsError
-        );
-
-        throw itemsError;
-      }
-
-      /* ---------------------------------------------
-         CREATE INITIAL TRACKING STATUS
-      --------------------------------------------- */
-
-      const {
-        error: historyError,
-      } = await supabase
-        .from("order_status_history")
-        .insert({
-          order_id:
-            order.id,
-
-          status:
-            "Order Placed",
-
-          note:
-            "Your Goo Amrutham Milk order has been placed successfully.",
-        });
-
-      if (historyError) {
-        console.error(
-          "Order history error:",
-          historyError
-        );
-
-        /*
-         * We don't fail the complete order here.
-         * The order and items were already created.
-         */
-      }
-
-      /* ---------------------------------------------
-         CLEAR CART
-      --------------------------------------------- */
-
-      clearCart();
-
-      /* ---------------------------------------------
-         SUCCESS UI
-      --------------------------------------------- */
-
-      setSuccessOrderNumber(
-        order.order_number
-      );
-
-      setOrderSuccess(true);
-
-      /* ---------------------------------------------
-         REDIRECT TO ORDERS
-      --------------------------------------------- */
-
-      setTimeout(() => {
-        navigate("/orders");
-
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
-      }, 2500);
-
+      razorpay.open();
     } catch (error) {
       console.error(
         "Checkout error:",
@@ -378,9 +792,9 @@ export default function Checkout() {
 
       setErrorMessage(
         error?.message ||
-          "Something went wrong while placing your order. Please try again."
+          "Unable to place your order. Please try again."
       );
-    } finally {
+
       setLoading(false);
     }
   };
@@ -392,13 +806,10 @@ export default function Checkout() {
   if (!currentUser) {
     return (
       <div className="container py-5">
-
         <div className="row justify-content-center">
-
           <div className="col-md-6">
 
             <div className="card border-0 shadow-sm rounded-4">
-
               <div className="card-body text-center p-5">
 
                 <FaUser
@@ -426,13 +837,10 @@ export default function Checkout() {
                 </button>
 
               </div>
-
             </div>
 
           </div>
-
         </div>
-
       </div>
     );
   }
@@ -447,7 +855,6 @@ export default function Checkout() {
   ) {
     return (
       <div className="container py-5">
-
         <div className="row justify-content-center">
 
           <div className="col-md-6">
@@ -481,13 +888,10 @@ export default function Checkout() {
                 </button>
 
               </div>
-
             </div>
 
           </div>
-
         </div>
-
       </div>
     );
   }
@@ -517,7 +921,8 @@ export default function Checkout() {
           <div
             className="bg-white rounded-4 shadow-lg text-center p-4 p-md-5 mx-3"
             style={{
-              maxWidth: "460px",
+              maxWidth:
+                "460px",
               width: "100%",
             }}
           >
@@ -544,7 +949,8 @@ export default function Checkout() {
             <p className="text-muted mb-4">
               Thank you for choosing
               <strong>
-                {" "}Goo Amrutham Milk
+                {" "}
+                Goo Amrutham Milk
               </strong>.
             </p>
 
@@ -574,7 +980,6 @@ export default function Checkout() {
             </div>
 
           </div>
-
         </div>
       )}
 
@@ -615,8 +1020,6 @@ export default function Checkout() {
                   Tell us where you'd like
                   your fresh milk delivered.
                 </p>
-
-                {/* ERROR MESSAGE */}
 
                 {errorMessage && (
                   <div
@@ -751,6 +1154,7 @@ export default function Checkout() {
                       value={form.slot}
                       onChange={handleChange}
                     >
+
                       <option value="Morning">
                         Morning
                       </option>
@@ -758,6 +1162,7 @@ export default function Checkout() {
                       <option value="Evening">
                         Evening
                       </option>
+
                     </select>
 
                   </div>
@@ -812,7 +1217,135 @@ export default function Checkout() {
 
                   </div>
 
-                  {/* PLACE ORDER */}
+                  {/* =================================================
+                      PAYMENT METHOD
+                  ================================================= */}
+
+                  <div className="mb-4">
+
+                    <label className="form-label fw-bold">
+                      Payment Method
+                    </label>
+
+                    <div className="row g-3">
+
+                      {/* ONLINE PAYMENT */}
+
+                      <div className="col-md-6">
+
+                        <label
+                          className={`w-100 p-3 rounded-4 border ${
+                            form.paymentMethod ===
+                            "razorpay"
+                              ? "border-success bg-success bg-opacity-10"
+                              : "border-light-subtle"
+                          }`}
+                          style={{
+                            cursor:
+                              "pointer",
+                          }}
+                        >
+
+                          <div className="d-flex align-items-center gap-3">
+
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="razorpay"
+                              checked={
+                                form.paymentMethod ===
+                                "razorpay"
+                              }
+                              onChange={
+                                handleChange
+                              }
+                              className="form-check-input"
+                            />
+
+                            <div>
+
+                              <div className="fw-bold">
+
+                                <FaCreditCard className="text-success me-2" />
+
+                                Online Payment
+
+                              </div>
+
+                              <small className="text-muted">
+                                Pay securely using Razorpay
+                              </small>
+
+                            </div>
+
+                          </div>
+
+                        </label>
+
+                      </div>
+
+                      {/* CASH ON DELIVERY */}
+
+                      <div className="col-md-6">
+
+                        <label
+                          className={`w-100 p-3 rounded-4 border ${
+                            form.paymentMethod ===
+                            "cod"
+                              ? "border-success bg-success bg-opacity-10"
+                              : "border-light-subtle"
+                          }`}
+                          style={{
+                            cursor:
+                              "pointer",
+                          }}
+                        >
+
+                          <div className="d-flex align-items-center gap-3">
+
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="cod"
+                              checked={
+                                form.paymentMethod ===
+                                "cod"
+                              }
+                              onChange={
+                                handleChange
+                              }
+                              className="form-check-input"
+                            />
+
+                            <div>
+
+                              <div className="fw-bold">
+
+                                <FaMoneyBillWave className="text-success me-2" />
+
+                                Cash on Delivery
+
+                              </div>
+
+                              <small className="text-muted">
+                                Pay when your milk is delivered
+                              </small>
+
+                            </div>
+
+                          </div>
+
+                        </label>
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                  {/* =================================================
+                      PLACE ORDER BUTTON
+                  ================================================= */}
 
                   <button
                     type="submit"
@@ -827,23 +1360,46 @@ export default function Checkout() {
                           role="status"
                         />
 
-                        Placing Your Order...
+                        {form.paymentMethod ===
+                        "cod"
+                          ? "Placing Order..."
+                          : "Starting Secure Payment..."}
                       </>
                     ) : (
                       <>
                         <FaCheckCircle className="me-2" />
 
-                        Place Order • ₹
-                        {total.toFixed(2)}
+                        {form.paymentMethod ===
+                        "cod"
+                          ? `Place Order • ₹${total.toFixed(
+                              2
+                            )}`
+                          : `Pay ₹${total.toFixed(
+                              2
+                            )}`}
                       </>
                     )}
 
                   </button>
 
+                  {/* PAYMENT INFORMATION */}
+
+                  <div className="text-center mt-3">
+
+                    <small className="text-muted">
+
+                      {form.paymentMethod ===
+                      "cod"
+                        ? "💵 Pay cash when your milk is delivered"
+                        : "🔒 Secure payment powered by Razorpay"}
+
+                    </small>
+
+                  </div>
+
                 </form>
 
               </div>
-
             </div>
 
           </div>
@@ -899,7 +1455,9 @@ export default function Checkout() {
 
                           <small className="text-muted">
                             {quantity} × ₹
-                            {price.toFixed(2)}
+                            {price.toFixed(
+                              2
+                            )}
                           </small>
 
                         </div>
@@ -909,7 +1467,9 @@ export default function Checkout() {
                           {(
                             price *
                             quantity
-                          ).toFixed(2)}
+                          ).toFixed(
+                            2
+                          )}
                         </strong>
 
                       </div>
@@ -927,7 +1487,9 @@ export default function Checkout() {
 
                   <strong>
                     ₹
-                    {subtotal.toFixed(2)}
+                    {subtotal.toFixed(
+                      2
+                    )}
                   </strong>
 
                 </div>
@@ -945,11 +1507,13 @@ export default function Checkout() {
                         : ""
                     }
                   >
+
                     {deliveryFee === 0
                       ? "FREE"
                       : `₹${deliveryFee.toFixed(
                           2
                         )}`}
+
                   </strong>
 
                 </div>
@@ -964,8 +1528,39 @@ export default function Checkout() {
 
                   <span className="fs-4 fw-bold text-success">
                     ₹
-                    {total.toFixed(2)}
+                    {total.toFixed(
+                      2
+                    )}
                   </span>
+
+                </div>
+
+                {/* SELECTED PAYMENT METHOD */}
+
+                <div className="mt-4 p-3 rounded-4 bg-light">
+
+                  <div className="small text-muted mb-1">
+                    Payment Method
+                  </div>
+
+                  <div className="fw-bold">
+
+                    {form.paymentMethod ===
+                    "cod" ? (
+                      <>
+                        <FaMoneyBillWave className="text-success me-2" />
+
+                        Cash on Delivery
+                      </>
+                    ) : (
+                      <>
+                        <FaCreditCard className="text-success me-2" />
+
+                        Online Payment
+                      </>
+                    )}
+
+                  </div>
 
                 </div>
 
