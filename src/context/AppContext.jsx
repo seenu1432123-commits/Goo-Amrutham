@@ -1243,11 +1243,7 @@ export function AppProvider({
     // DELIVERY FEE
     // =================================================
 
-    const deliveryFee =
-        cartTotal >= 200 ||
-        cartTotal === 0
-            ? 0
-            : 20;
+    const deliveryFee = 0 ;
 
 
     // =================================================

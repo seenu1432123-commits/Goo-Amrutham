@@ -112,11 +112,10 @@ export default function Checkout() {
      DELIVERY FEE
 
      ₹500 or more = FREE
-     Below ₹500 = ₹20
+     Below ₹500 = ₹0
   ===================================================== */
 
-  const deliveryFee =
-    subtotal >= 500 ? 0 : 20;
+  const deliveryFee = 0;
 
   /* =====================================================
      TOTAL
@@ -144,7 +143,7 @@ export default function Checkout() {
       cartItems.map((item) => ({
         product_id: String(
           item.id ||
-            item.product_id
+          item.product_id
         ),
 
         qty: Number(
@@ -196,10 +195,11 @@ export default function Checkout() {
      CREATE ORDER
 
      Used by BOTH:
-
      1. Cash on Delivery
      2. Razorpay after successful verification
   ===================================================== */
+
+
 
   const createGooOrder = async (
     user,
@@ -210,7 +210,7 @@ export default function Checkout() {
       cartItems.map((item) => ({
         product_id: String(
           item.id ||
-            item.product_id
+          item.product_id
         ),
 
         qty: Number(
@@ -280,7 +280,7 @@ export default function Checkout() {
 
     const orderId =
       typeof createdOrder ===
-      "string"
+        "string"
         ? createdOrder
         : createdOrder?.id;
 
@@ -302,12 +302,12 @@ export default function Checkout() {
 
     if (
       paymentMethod ===
-        "razorpay" &&
+      "razorpay" &&
       razorpayData
     ) {
       const {
         error:
-          paymentFinalizeError,
+        paymentFinalizeError,
       } =
         await supabase.rpc(
           "finalize_order_payment",
@@ -341,7 +341,137 @@ export default function Checkout() {
       orderNumber,
     };
   };
+  /* =====================================================
+     SEND ORDER CONFIRMATION EMAIL
+  ===================================================== */
 
+  const sendOrderConfirmationEmail = async (
+    user,
+    createdOrder,
+    razorpayData
+  ) => {
+    const emailItems = cartItems.map((item) => {
+      const quantity = Number(item.qty || 1);
+      const unitPrice = Number(item.price || 0);
+
+      return {
+        name:
+          item.name ||
+          item.PR_NAME ||
+          "Milk Product",
+
+        unit:
+          item.unit ||
+          item.Quantity ||
+          item.quantity ||
+          "",
+
+        quantity,
+
+        unit_price: unitPrice,
+
+        line_total:
+          unitPrice * quantity,
+      };
+    });
+
+    const emailOrder = {
+      order_number:
+        createdOrder.orderNumber ||
+        "GAM-ORDER",
+
+      customer_name:
+        form.name.trim(),
+
+      customer_email:
+        user.email || "",
+
+      address:
+        form.address.trim(),
+
+      city:
+        form.city.trim(),
+
+      pincode:
+        form.pincode.trim(),
+
+      slot:
+        form.slot,
+
+      frequency:
+        form.frequency,
+
+      instructions:
+        form.notes.trim(),
+
+      subtotal:
+        subtotal,
+
+      delivery_fee:
+        deliveryFee,
+
+      total:
+        total,
+
+      payment_method:
+        "razorpay",
+
+      payment_status:
+        "Paid",
+
+      razorpay_order_id:
+        razorpayData?.razorpay_order_id || "",
+
+      razorpay_payment_id:
+        razorpayData?.razorpay_payment_id || "",
+
+      items:
+        emailItems,
+    };
+
+    const {
+      data,
+      error,
+    } = await supabase.functions.invoke(
+      "send-order-email",
+      {
+        body: {
+          order: emailOrder,
+        },
+      }
+    );
+
+    if (error) {
+      console.error(
+        "Order confirmation email error:",
+        error
+      );
+
+      throw new Error(
+        error.message ||
+        "Order was placed, but the confirmation email could not be sent."
+      );
+    }
+
+    if (!data?.success) {
+      console.error(
+        "Email function error:",
+        data
+      );
+
+      throw new Error(
+        data?.error ||
+        "Order was placed, but the confirmation email could not be sent."
+      );
+    }
+
+    console.log(
+      "Order confirmation email sent:",
+      data
+    );
+
+    return data;
+  };
   /* =====================================================
      COMPLETE SUCCESS
   ===================================================== */
@@ -353,7 +483,7 @@ export default function Checkout() {
 
     setSuccessOrderNumber(
       orderNumber ||
-        "Order Placed"
+      "Order Placed"
     );
 
     setOrderSuccess(true);
@@ -541,7 +671,7 @@ export default function Checkout() {
       const {
         data: razorpayOrder,
         error:
-          razorpayOrderError,
+        razorpayOrderError,
       } =
         await supabase.functions.invoke(
           "create-razorpay-order",
@@ -567,7 +697,7 @@ export default function Checkout() {
 
         throw new Error(
           razorpayOrderError.message ||
-            "Unable to create payment order."
+          "Unable to create payment order."
         );
       }
 
@@ -577,7 +707,7 @@ export default function Checkout() {
       ) {
         throw new Error(
           razorpayOrder?.error ||
-            "Unable to create Razorpay order."
+          "Unable to create Razorpay order."
         );
       }
 
@@ -665,9 +795,9 @@ export default function Checkout() {
 
               const {
                 data:
-                  verification,
+                verification,
                 error:
-                  verificationError,
+                verificationError,
               } =
                 await supabase.functions.invoke(
                   "verify-razorpay-payment",
@@ -695,7 +825,7 @@ export default function Checkout() {
 
                 throw new Error(
                   verificationError.message ||
-                    "Payment verification failed."
+                  "Payment verification failed."
                 );
               }
 
@@ -705,7 +835,7 @@ export default function Checkout() {
               ) {
                 throw new Error(
                   verification?.error ||
-                    "Payment could not be verified."
+                  "Payment could not be verified."
                 );
               }
 
@@ -713,6 +843,9 @@ export default function Checkout() {
                  PAYMENT VERIFIED
                  
                  NOW CREATE GOO AMRUTHAM ORDER
+              ========================================= */
+              /* =========================================
+                 CREATE + FINALIZE ORDER
               ========================================= */
 
               const created =
@@ -723,13 +856,30 @@ export default function Checkout() {
                 );
 
               /* =========================================
+                 PAYMENT IS NOW FULLY FINALIZED
+
+                 payment_status = Paid
+              ========================================= */
+
+              /* =========================================
+                 SEND CONFIRMATION EMAIL
+              ========================================= */
+
+              await sendOrderConfirmationEmail(
+                user,
+                created,
+                response
+              );
+
+              /* =========================================
                  SUCCESS
               ========================================= */
 
               completeOrderSuccess(
                 created.orderNumber ||
-                  response.razorpay_order_id
+                response.razorpay_order_id
               );
+
             } catch (error) {
               console.error(
                 "Payment completion error:",
@@ -738,7 +888,7 @@ export default function Checkout() {
 
               setErrorMessage(
                 error?.message ||
-                  "Payment was successful, but we could not complete your order. Please contact Goo Amrutham support."
+                "Payment was successful, but we could not complete your order. Please contact Goo Amrutham support."
               );
 
               setLoading(false);
@@ -774,7 +924,7 @@ export default function Checkout() {
           setErrorMessage(
             response?.error
               ?.description ||
-              "Payment failed. Your order has not been placed."
+            "Payment failed. Your order has not been placed."
           );
         }
       );
@@ -792,7 +942,7 @@ export default function Checkout() {
 
       setErrorMessage(
         error?.message ||
-          "Unable to place your order. Please try again."
+        "Unable to place your order. Please try again."
       );
 
       setLoading(false);
@@ -1234,12 +1384,11 @@ export default function Checkout() {
                       <div className="col-md-6">
 
                         <label
-                          className={`w-100 p-3 rounded-4 border ${
-                            form.paymentMethod ===
-                            "razorpay"
+                          className={`w-100 p-3 rounded-4 border ${form.paymentMethod ===
+                              "razorpay"
                               ? "border-success bg-success bg-opacity-10"
                               : "border-light-subtle"
-                          }`}
+                            }`}
                           style={{
                             cursor:
                               "pointer",
@@ -1289,12 +1438,11 @@ export default function Checkout() {
                       <div className="col-md-6">
 
                         <label
-                          className={`w-100 p-3 rounded-4 border ${
-                            form.paymentMethod ===
-                            "cod"
+                          className={`w-100 p-3 rounded-4 border ${form.paymentMethod ===
+                              "cod"
                               ? "border-success bg-success bg-opacity-10"
                               : "border-light-subtle"
-                          }`}
+                            }`}
                           style={{
                             cursor:
                               "pointer",
@@ -1361,7 +1509,7 @@ export default function Checkout() {
                         />
 
                         {form.paymentMethod ===
-                        "cod"
+                          "cod"
                           ? "Placing Order..."
                           : "Starting Secure Payment..."}
                       </>
@@ -1370,13 +1518,13 @@ export default function Checkout() {
                         <FaCheckCircle className="me-2" />
 
                         {form.paymentMethod ===
-                        "cod"
+                          "cod"
                           ? `Place Order • ₹${total.toFixed(
-                              2
-                            )}`
+                            2
+                          )}`
                           : `Pay ₹${total.toFixed(
-                              2
-                            )}`}
+                            2
+                          )}`}
                       </>
                     )}
 
@@ -1389,7 +1537,7 @@ export default function Checkout() {
                     <small className="text-muted">
 
                       {form.paymentMethod ===
-                      "cod"
+                        "cod"
                         ? "💵 Pay cash when your milk is delivered"
                         : "🔒 Secure payment powered by Razorpay"}
 
@@ -1495,7 +1643,6 @@ export default function Checkout() {
                 </div>
 
                 <div className="d-flex justify-content-between mb-3">
-
                   <span className="text-muted">
                     Delivery
                   </span>
@@ -1504,18 +1651,13 @@ export default function Checkout() {
                     className={
                       deliveryFee === 0
                         ? "text-success"
-                        : ""
+                        : "text-success"
                     }
                   >
-
                     {deliveryFee === 0
                       ? "FREE"
-                      : `₹${deliveryFee.toFixed(
-                          2
-                        )}`}
-
+                      : `₹${deliveryFee.toFixed(2)}`}
                   </strong>
-
                 </div>
 
                 <hr />
@@ -1546,7 +1688,7 @@ export default function Checkout() {
                   <div className="fw-bold">
 
                     {form.paymentMethod ===
-                    "cod" ? (
+                      "cod" ? (
                       <>
                         <FaMoneyBillWave className="text-success me-2" />
 
@@ -1589,4 +1731,5 @@ export default function Checkout() {
       </div>
     </>
   );
+
 }
