@@ -429,3 +429,69 @@
     padding-right: 1.1rem !important;
   }
 }
+
+/* =========================================
+   FLOATING BACK BUTTON
+========================================= */
+
+.back-floating-button {
+  position: fixed;
+  left: 14px;
+  bottom: 22px;
+
+  z-index: 9998;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 12px 18px;
+
+  border: none;
+  border-radius: 50px;
+
+  background: #198754;
+  color: #ffffff;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.back-floating-button:hover {
+  background: #157347;
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+}
+
+.back-floating-button:active {
+  transform: scale(0.95);
+}
+
+/* Mobile */
+@media (max-width: 576px) {
+  .back-floating-button {
+    left: 15px;
+    bottom: 15px;
+
+    width: 56px;
+    height: 56px;
+
+    padding: 0;
+
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .back-floating-button span {
+    display: none;
+  }
+}
