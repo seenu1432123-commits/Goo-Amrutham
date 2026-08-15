@@ -24,11 +24,13 @@ import Contact from "./pages/Contact";
 import Subscription from "./pages/Subscription";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
+import BackButton from "./components/BackButton";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Navbar />
+      <BackButton/>
 
       <Routes>
         <Route path="/" element={<Home />} />
