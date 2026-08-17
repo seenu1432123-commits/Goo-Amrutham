@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MSG91 OTP Test</title>
+</head>
+<body>
+
+  <h2>MSG91 OTP Test</h2>
+
+  <input
+    id="mobile"
+    value="918919597205"
+    placeholder="Mobile number"
+  />
+
+  <button onclick="sendTestOtp()">
+    Send OTP
+  </button>
+
+  <pre id="result"></pre>
+
+  <script>
+    var configuration = {
+      widgetId: "3668716d6469383134393937",
+
+      // IMPORTANT:
+      // Put your OTP WIDGET token here.
+      // Do NOT use your MSG91 Authkey.
+      tokenAuth: "YOUR_OTP_WIDGET_TOKEN",
+
+      exposeMethods: true,
+
+      success: function(data) {
+        console.log("MSG91 SUCCESS:", data);
+        document.getElementById("result").textContent =
+          "SUCCESS:\n" + JSON.stringify(data, null, 2);
+      },
+
+      failure: function(error) {
+        console.error("MSG91 FAILURE:", error);
+        document.getElementById("result").textContent =
+          "FAILURE:\n" + JSON.stringify(error, null, 2);
+      }
+    };
+  </script>
+
+  <script
+    type="text/javascript"
+    src="https://verify.msg91.com/otp-provider.js"
+    onload="initSendOTP(configuration)"
+  ></script>
+
+  <script>
+    function sendTestOtp() {
+
+      const number =
+        document.getElementById("mobile").value.trim();
+
+      console.log("Sending:", number);
+
+      if (!window.sendOtp) {
+        console.error("sendOtp is not available");
+        return;
+      }
+
+      window.sendOtp(
+        number,
+
+        function(data) {
+          console.log("OTP SENT:", data);
+          document.getElementById("result").textContent =
+            "OTP SENT:\n" + JSON.stringify(data, null, 2);
+        },
+
+        function(error) {
+          console.error("OTP ERROR:", error);
+          document.getElementById("result").textContent =
+            "OTP ERROR:\n" + JSON.stringify(error, null, 2);
+        }
+      );
+    }
+  </script>
+
+</body>
+</html>

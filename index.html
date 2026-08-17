@@ -2,13 +2,209 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1f5f3b" />
-    <meta name="description" content="Goo Amrutham Milk — fresh milk from our farms to your home." />
-    <title>Goo Amrutham Milk | From Our Farms to Your Home</title>
+
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <meta
+      name="theme-color"
+      content="#198754"
+    />
+
+    <title>Goo Amrutham</title>
+
+    <script>
+      window.MSG91_READY = false;
+      window.MSG91_WIDGET = null;
+      window.MSG91_READY_PROMISE = null;
+
+      window.MSG91_CONFIG = {
+        widgetId: "3668716d6469383134393937",
+
+        tokenAuth: "YOUR_TOKEN_AUTH",
+
+        exposeMethods: true,
+
+        success: function (data) {
+          console.log(
+            "MSG91 widget success:",
+            data
+          );
+
+          window.dispatchEvent(
+            new CustomEvent(
+              "msg91-success",
+              {
+                detail: data
+              }
+            )
+          );
+        },
+
+        failure: function (error) {
+          console.error(
+            "MSG91 widget failure:",
+            error
+          );
+
+          window.dispatchEvent(
+            new CustomEvent(
+              "msg91-failure",
+              {
+                detail: error
+              }
+            )
+          );
+        }
+      };
+
+
+      window.MSG91_READY_PROMISE =
+        new Promise(
+          function (resolve) {
+
+            window.__resolveMSG91 =
+              resolve;
+
+          }
+        );
+
+
+      function loadMSG91(urls) {
+
+        let index = 0;
+
+
+        function attempt() {
+
+          if (
+            index >= urls.length
+          ) {
+
+            console.error(
+              "Unable to load MSG91 OTP provider."
+            );
+
+            return;
+          }
+
+
+          const script =
+            document.createElement(
+              "script"
+            );
+
+
+          script.src =
+            urls[index];
+
+          script.async = true;
+
+
+          script.onload =
+            function () {
+
+              console.log(
+                "MSG91 OTP script loaded:",
+                urls[index]
+              );
+
+
+              if (
+                typeof window.initSendOTP ===
+                "function"
+              ) {
+
+                try {
+
+                  window.initSendOTP(
+                    window.MSG91_CONFIG
+                  );
+
+
+                  window.MSG91_READY =
+                    true;
+
+
+                  console.log(
+                    "MSG91 OTP widget initialized."
+                  );
+
+
+                  if (
+                    window.__resolveMSG91
+                  ) {
+
+                    window.__resolveMSG91(
+                      true
+                    );
+
+                  }
+
+                } catch (
+                  error
+                ) {
+
+                  console.error(
+                    "MSG91 initialization error:",
+                    error
+                  );
+
+                }
+
+              } else {
+
+                console.error(
+                  "initSendOTP() is unavailable."
+                );
+
+              }
+            };
+
+
+          script.onerror =
+            function () {
+
+              console.warn(
+                "MSG91 script failed:",
+                urls[index]
+              );
+
+              index++;
+
+              attempt();
+
+            };
+
+
+          document.head.appendChild(
+            script
+          );
+        }
+
+
+        attempt();
+      }
+
+
+      loadMSG91([
+        "https://verify.msg91.com/otp-provider.js",
+        "https://verify.phone91.com/otp-provider.js"
+      ]);
+    </script>
   </head>
+
+
   <body>
+
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+
+    <script
+      type="module"
+      src="/src/main.jsx"
+    ></script>
+
   </body>
 </html>
