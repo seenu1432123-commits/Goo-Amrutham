@@ -18,7 +18,6 @@ const AppContext = createContext(null);
 const CART_KEY = "goo_cart";
 const THEME_KEY = "goo_theme";
 
-
 // =====================================================
 // LOCAL STORAGE
 // =====================================================
@@ -37,215 +36,112 @@ const read = (key, fallback) => {
     }
 };
 
-
 // =====================================================
-// INDIAN PHONE NORMALIZER
-// =====================================================
-
-const normalizeIndianPhone = (phone) => {
-    const value = String(phone || "").trim();
-
-    if (!value) {
-        throw new Error(
-            "Please enter your mobile number."
-        );
-    }
-
-    const digits = value.replace(/\D/g, "");
-
-    let localNumber = digits;
-
-    if (
-        digits.length === 12 &&
-        digits.startsWith("91")
-    ) {
-        localNumber = digits.slice(2);
-    }
-
-    if (localNumber.length !== 10) {
-        throw new Error(
-            "Please enter a valid 10-digit Indian mobile number."
-        );
-    }
-
-    if (!/^[6-9]\d{9}$/.test(localNumber)) {
-        throw new Error(
-            "Please enter a valid Indian mobile number starting with 6, 7, 8 or 9."
-        );
-    }
-
-    return `+91${localNumber}`;
-};
-
-
-// MSG91 format:
-// 919876543210
-// NO +
-// =====================================================
-
-const msg91Phone = (phone) => {
-    const normalized =
-        normalizeIndianPhone(phone);
-
-    return normalized.replace(
-        /^\+/,
-        ""
-    );
-};
-
-
-// =====================================================
-// MAP ORDER
+// ORDER MAPPER
 // =====================================================
 
 const mapOrder = (o) => ({
     ...o,
 
-    userId:
-        o.user_id,
+    userId: o.user_id,
 
-    createdAt:
-        o.created_at,
+    createdAt: o.created_at,
 
-    updatedAt:
-        o.updated_at,
+    updatedAt: o.updated_at,
 
-    deliveryFee:
-        Number(
-            o.delivery_fee || 0
-        ),
+    deliveryFee: Number(o.delivery_fee || 0),
 
-    subtotal:
-        Number(
-            o.subtotal || 0
-        ),
+    subtotal: Number(o.subtotal || 0),
 
-    total:
-        Number(
-            o.total || 0
-        ),
+    total: Number(o.total || 0),
 
-    totalAmount:
-        Number(
-            o.total_amount ||
-            o.total ||
-            0
-        ),
+    totalAmount: Number(
+        o.total_amount ||
+        o.total ||
+        0
+    ),
 
     paymentMethod:
-        o.payment_method ||
-        "cod",
+        o.payment_method || "cod",
 
     paymentStatus:
-        o.payment_status ||
-        "Pending",
+        o.payment_status || "Pending",
 
     razorpayOrderId:
-        o.razorpay_order_id ||
-        null,
+        o.razorpay_order_id || null,
 
     razorpayPaymentId:
-        o.razorpay_payment_id ||
-        null,
+        o.razorpay_payment_id || null,
 
     razorpaySignature:
-        o.razorpay_signature ||
-        null,
+        o.razorpay_signature || null,
 
     subscriptionId:
-        o.subscription_id ||
-        null,
+        o.subscription_id || null,
 
     subscriptionDeliveryDate:
-        o.subscription_delivery_date ||
-        null,
+        o.subscription_delivery_date || null,
 
-    slot:
-        o.slot,
+    slot: o.slot,
 
-    frequency:
-        o.frequency,
+    frequency: o.frequency,
 
     customer: {
-        name:
-            o.customer_name,
+        name: o.customer_name,
 
-        phone:
-            o.customer_phone,
+        phone: o.customer_phone,
 
-        email:
-            o.customer_email,
+        email: o.customer_email,
 
         address:
             o.address ||
             o.delivery_address ||
             "",
 
-        city:
-            o.city,
+        city: o.city,
 
-        pincode:
-            o.pincode,
+        pincode: o.pincode,
 
         instructions:
-            o.instructions ||
-            "",
+            o.instructions || "",
     },
 
-    items:
-        (
-            o.order_items ||
-            []
-        ).map((i) => ({
-            id:
-                i.product_id,
+    items: (
+        o.order_items || []
+    ).map((i) => ({
+        id: i.product_id,
 
-            productId:
-                i.product_id,
+        productId: i.product_id,
 
-            name:
-                i.name,
+        name: i.name,
 
-            unit:
-                i.unit,
+        unit: i.unit,
 
-            price:
-                Number(
-                    i.unit_price || 0
-                ),
+        price: Number(
+            i.unit_price || 0
+        ),
 
-            qty:
-                Number(
-                    i.qty || 0
-                ),
+        qty: Number(i.qty || 0),
 
-            lineTotal:
-                Number(
-                    i.line_total || 0
-                ),
-        })),
+        lineTotal: Number(
+            i.line_total || 0
+        ),
+    })),
 
-    timeline:
-        (
-            o.order_status_history ||
-            []
-        ).map((h) => ({
-            status:
-                h.status,
+    timeline: (
+        o.order_status_history || []
+    ).map((h) => ({
+        status: h.status,
 
-            time:
-                h.created_at,
-        })),
+        time: h.created_at,
+    })),
 });
-
 
 // =====================================================
 // APP PROVIDER
 // =====================================================
 
-export function AppProvider({
-    children,
-}) {
+export function AppProvider({ children }) {
 
     // =================================================
     // AUTH
@@ -259,10 +155,7 @@ export function AppProvider({
     const [
         profileLoading,
         setProfileLoading,
-    ] = useState(
-        supabaseConfigured
-    );
-
+    ] = useState(supabaseConfigured);
 
     // =================================================
     // ORDERS
@@ -278,7 +171,6 @@ export function AppProvider({
         setOrdersLoading,
     ] = useState(false);
 
-
     // =================================================
     // USERS
     // =================================================
@@ -288,6 +180,19 @@ export function AppProvider({
         setUsers,
     ] = useState([]);
 
+    // =================================================
+    // SUBSCRIPTIONS
+    // =================================================
+
+    const [
+        subscriptions,
+        setSubscriptions,
+    ] = useState([]);
+
+    const [
+        subscriptionsLoading,
+        setSubscriptionsLoading,
+    ] = useState(false);
 
     // =================================================
     // CART
@@ -297,12 +202,8 @@ export function AppProvider({
         cart,
         setCart,
     ] = useState(() =>
-        read(
-            CART_KEY,
-            []
-        )
+        read(CART_KEY, [])
     );
-
 
     // =================================================
     // THEME
@@ -318,7 +219,6 @@ export function AppProvider({
             ) || "light"
     );
 
-
     // =================================================
     // CLOUD ERROR
     // =================================================
@@ -328,27 +228,22 @@ export function AppProvider({
         setCloudError,
     ] = useState("");
 
-
     // =================================================
     // CART STORAGE
     // =================================================
 
     useEffect(() => {
-
         localStorage.setItem(
             CART_KEY,
             JSON.stringify(cart)
         );
-
     }, [cart]);
-
 
     // =================================================
     // THEME
     // =================================================
 
     useEffect(() => {
-
         document.documentElement.dataset.theme =
             theme;
 
@@ -356,25 +251,19 @@ export function AppProvider({
             THEME_KEY,
             theme
         );
-
     }, [theme]);
-
 
     // =================================================
     // LOAD PROFILE
     // =================================================
 
-    const loadProfile = async (
-        authUser
-    ) => {
+    const loadProfile = async (authUser) => {
 
         if (
             !authUser ||
             !supabase
         ) {
-
             setCurrentUser(null);
-
             return null;
         }
 
@@ -384,53 +273,43 @@ export function AppProvider({
         } = await supabase
             .from("profiles")
             .select("*")
-            .eq(
-                "id",
-                authUser.id
-            )
+            .eq("id", authUser.id)
             .maybeSingle();
 
         if (error) {
             throw error;
         }
 
-
-        // ---------------------------------------------
+        // =============================================
         // CREATE PROFILE IF MISSING
-        // ---------------------------------------------
+        // =============================================
 
         if (!data) {
 
             const metadata =
-                authUser.user_metadata ||
-                {};
-
-            const phone =
-                authUser.phone ||
-                metadata.phone ||
-                null;
-
-            const email =
-                authUser.email ||
-                metadata.email ||
-                null;
+                authUser.user_metadata || {};
 
             const name =
                 metadata.name ||
                 metadata.full_name ||
                 "Goo Amrutham Customer";
 
+            const phone =
+                metadata.phone ||
+                authUser.phone ||
+                null;
+
+            const email =
+                authUser.email ||
+                null;
 
             const {
-                data:
-                    createdProfile,
-                error:
-                    createError,
+                data: createdProfile,
+                error: createError,
             } = await supabase
                 .from("profiles")
                 .insert({
-                    id:
-                        authUser.id,
+                    id: authUser.id,
 
                     name,
 
@@ -438,29 +317,24 @@ export function AppProvider({
 
                     email,
 
-                    role:
-                        "customer",
+                    role: "customer",
                 })
                 .select("*")
                 .single();
 
-
             if (createError) {
 
+                // Profile may have been created
+                // by another request at the same time.
+
                 const {
-                    data:
-                        existingProfile,
-                    error:
-                        retryError,
+                    data: existingProfile,
+                    error: retryError,
                 } = await supabase
                     .from("profiles")
                     .select("*")
-                    .eq(
-                        "id",
-                        authUser.id
-                    )
+                    .eq("id", authUser.id)
                     .maybeSingle();
-
 
                 if (
                     retryError ||
@@ -468,7 +342,6 @@ export function AppProvider({
                 ) {
                     throw createError;
                 }
-
 
                 const profile = {
                     ...existingProfile,
@@ -489,7 +362,6 @@ export function AppProvider({
                 return profile;
             }
 
-
             const profile = {
                 ...createdProfile,
 
@@ -509,10 +381,9 @@ export function AppProvider({
             return profile;
         }
 
-
-        // ---------------------------------------------
+        // =============================================
         // EXISTING PROFILE
-        // ---------------------------------------------
+        // =============================================
 
         const profile = {
             ...data,
@@ -533,7 +404,6 @@ export function AppProvider({
         return profile;
     };
 
-
     // =================================================
     // SUPABASE SESSION
     // =================================================
@@ -541,84 +411,78 @@ export function AppProvider({
     useEffect(() => {
 
         if (!supabase) {
-
             setProfileLoading(false);
-
             return;
         }
 
         let mounted = true;
 
-
-        // ---------------------------------------------
+        // =============================================
         // INITIAL SESSION
-        // ---------------------------------------------
+        // =============================================
 
-        supabase.auth
-            .getSession()
-            .then(
-                async ({
-                    data: {
-                        session,
-                    },
-                }) => {
+        const loadSession = async () => {
 
-                    if (!mounted) {
-                        return;
-                    }
+            try {
 
-                    try {
+                const {
+                    data,
+                    error,
+                } =
+                    await supabase.auth.getSession();
 
-                        if (
-                            session?.user
-                        ) {
-
-                            await loadProfile(
-                                session.user
-                            );
-
-                        } else {
-
-                            setCurrentUser(
-                                null
-                            );
-                        }
-
-                    } catch (error) {
-
-                        console.error(
-                            "Profile loading error:",
-                            error
-                        );
-
-                        setCloudError(
-                            error.message
-                        );
-
-                    } finally {
-
-                        if (mounted) {
-
-                            setProfileLoading(
-                                false
-                            );
-                        }
-                    }
+                if (!mounted) {
+                    return;
                 }
-            );
 
+                if (error) {
+                    throw error;
+                }
 
-        // ---------------------------------------------
-        // AUTH LISTENER
-        // ---------------------------------------------
+                if (data?.session?.user) {
+
+                    await loadProfile(
+                        data.session.user
+                    );
+
+                } else {
+
+                    setCurrentUser(null);
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Session error:",
+                    error
+                );
+
+                if (mounted) {
+                    setCloudError(
+                        error.message
+                    );
+                }
+
+            } finally {
+
+                if (mounted) {
+                    setProfileLoading(false);
+                }
+            }
+        };
+
+        loadSession();
+
+        // =============================================
+        // AUTH STATE LISTENER
+        // =============================================
 
         const {
-            data:
-                listener,
+            data: listener,
         } =
             supabase.auth.onAuthStateChange(
                 (
-                    _event,
+                    event,
                     session
                 ) => {
 
@@ -626,62 +490,53 @@ export function AppProvider({
                         return;
                     }
 
-                    if (
-                        !session?.user
-                    ) {
+                    if (!session?.user) {
 
-                        setCurrentUser(
-                            null
-                        );
+                        setCurrentUser(null);
 
                         setOrders([]);
 
                         setUsers([]);
 
-                        setProfileLoading(
-                            false
-                        );
+                        setSubscriptions([]);
+
+                        setProfileLoading(false);
 
                         return;
                     }
 
+                    // Avoid doing Supabase queries
+                    // directly inside the auth callback.
 
-                    setTimeout(
-                        () => {
+                    setTimeout(() => {
 
-                            loadProfile(
-                                session.user
-                            ).catch(
-                                (error) => {
+                        loadProfile(
+                            session.user
+                        ).catch((error) => {
 
-                                    console.error(
-                                        "Auth profile error:",
-                                        error
-                                    );
-
-                                    setCloudError(
-                                        error.message
-                                    );
-                                }
+                            console.error(
+                                "Auth profile error:",
+                                error
                             );
 
-                        },
-                        0
-                    );
+                            setCloudError(
+                                error.message
+                            );
+
+                        });
+
+                    }, 0);
                 }
             );
-
 
         return () => {
 
             mounted = false;
 
-            listener.subscription.unsubscribe();
-
+            listener?.subscription?.unsubscribe();
         };
 
     }, []);
-
 
     // =================================================
     // FETCH ORDERS
@@ -693,7 +548,6 @@ export function AppProvider({
             !supabase ||
             !currentUser
         ) {
-
             return [];
         }
 
@@ -710,11 +564,9 @@ export function AppProvider({
                     .order(
                         "created_at",
                         {
-                            ascending:
-                                false,
+                            ascending: false,
                         }
                     );
-
 
             if (
                 currentUser.role !==
@@ -728,26 +580,19 @@ export function AppProvider({
                     );
             }
 
-
             const {
                 data,
                 error,
             } = await query;
 
-
             if (error) {
                 throw error;
             }
 
-
             const mapped =
-                (
-                    data ||
-                    []
-                ).map(
+                (data || []).map(
                     mapOrder
                 );
-
 
             setOrders(mapped);
 
@@ -772,7 +617,6 @@ export function AppProvider({
         }
     };
 
-
     // =================================================
     // FETCH USERS
     // =================================================
@@ -784,37 +628,223 @@ export function AppProvider({
             currentUser?.role !==
             "admin"
         ) {
-            return;
+            return [];
         }
-
 
         const {
             data,
             error,
-        } = await supabase
-            .from("profiles")
-            .select(
-                "id,name,phone,email,city,pincode,role,created_at"
-            )
-            .order(
-                "created_at",
-                {
-                    ascending:
-                        false,
-                }
-            );
-
+        } =
+            await supabase
+                .from("profiles")
+                .select(
+                    "id,name,phone,email,city,pincode,role,created_at"
+                )
+                .order(
+                    "created_at",
+                    {
+                        ascending: false,
+                    }
+                );
 
         if (error) {
             throw error;
         }
 
+        setUsers(data || []);
 
-        setUsers(
-            data || []
-        );
+        return data || [];
     };
 
+    // =================================================
+    // FETCH SUBSCRIPTIONS
+    // =================================================
+
+    const fetchSubscriptions = async () => {
+
+        if (
+            !supabase ||
+            !currentUser
+        ) {
+
+            setSubscriptions([]);
+
+            return [];
+        }
+
+        setSubscriptionsLoading(true);
+
+        try {
+
+            let query =
+                supabase
+                    .from("subscriptions")
+                    .select("*")
+                    .order(
+                        "created_at",
+                        {
+                            ascending: false,
+                        }
+                    );
+
+            if (
+                currentUser.role !==
+                "admin"
+            ) {
+
+                query =
+                    query.eq(
+                        "user_id",
+                        currentUser.id
+                    );
+            }
+
+            const {
+                data,
+                error,
+            } =
+                await query;
+
+            if (error) {
+                throw error;
+            }
+
+            setSubscriptions(
+                data || []
+            );
+
+            return data || [];
+
+        } catch (error) {
+
+            console.error(
+                "Fetch subscriptions error:",
+                error
+            );
+
+            setCloudError(
+                error.message
+            );
+
+            throw error;
+
+        } finally {
+
+            setSubscriptionsLoading(
+                false
+            );
+        }
+    };
+
+    // =================================================
+    // REALTIME SUBSCRIPTIONS
+    // =================================================
+
+    useEffect(() => {
+
+        if (
+            !supabase ||
+            !currentUser?.id
+        ) {
+            return;
+        }
+
+        fetchSubscriptions().catch(
+            (error) => {
+                console.error(
+                    "Subscription initial load error:",
+                    error
+                );
+            }
+        );
+
+        const channel =
+            supabase
+                .channel(
+                    `user-subscriptions-${currentUser.id}`
+                )
+                .on(
+                    "postgres_changes",
+                    {
+                        event: "*",
+                        schema: "public",
+                        table: "subscriptions",
+                        filter:
+                            `user_id=eq.${currentUser.id}`,
+                    },
+                    (payload) => {
+
+                        if (
+                            payload.eventType ===
+                            "UPDATE"
+                        ) {
+
+                            setSubscriptions(
+                                (previous) =>
+                                    previous.map(
+                                        (
+                                            subscription
+                                        ) =>
+                                            String(
+                                                subscription.id
+                                            ) ===
+                                            String(
+                                                payload.new.id
+                                            )
+                                                ? {
+                                                    ...subscription,
+                                                    ...payload.new,
+                                                }
+                                                : subscription
+                                    )
+                            );
+                        }
+
+                        if (
+                            payload.eventType ===
+                            "INSERT"
+                        ) {
+
+                            setSubscriptions(
+                                (previous) => [
+                                    payload.new,
+                                    ...previous,
+                                ]
+                            );
+                        }
+
+                        if (
+                            payload.eventType ===
+                            "DELETE"
+                        ) {
+
+                            setSubscriptions(
+                                (previous) =>
+                                    previous.filter(
+                                        (
+                                            subscription
+                                        ) =>
+                                            String(
+                                                subscription.id
+                                            ) !==
+                                            String(
+                                                payload.old.id
+                                            )
+                                    )
+                            );
+                        }
+                    }
+                )
+                .subscribe();
+
+        return () => {
+
+            supabase.removeChannel(
+                channel
+            );
+        };
+
+    }, [currentUser?.id]);
 
     // =================================================
     // INITIAL DATA
@@ -831,39 +861,37 @@ export function AppProvider({
 
             setUsers([]);
 
+            setSubscriptions([]);
+
             return;
         }
 
-
         setCloudError("");
-
 
         Promise.all([
             fetchOrders(),
 
-            currentUser.role ===
-            "admin"
+            fetchSubscriptions(),
+
+            currentUser.role === "admin"
                 ? fetchUsers()
                 : Promise.resolve(),
-        ]).catch(
-            (error) => {
+        ]).catch((error) => {
 
-                console.error(
-                    "Initial data load error:",
-                    error
-                );
+            console.error(
+                "Initial data load error:",
+                error
+            );
 
-                setCloudError(
-                    error.message
-                );
-            }
-        );
+            setCloudError(
+                error.message
+            );
+        });
 
     }, [
         currentUser?.id,
         currentUser?.role,
     ]);
-
 
     // =================================================
     // REALTIME ORDERS
@@ -878,37 +906,23 @@ export function AppProvider({
             return;
         }
 
-
         const channel =
             supabase
                 .channel(
                     `goo-orders-${currentUser.id}`
                 )
 
-
-                // -------------------------------------
-                // INSERT
-                // -------------------------------------
-
                 .on(
                     "postgres_changes",
                     {
-                        event:
-                            "INSERT",
-
-                        schema:
-                            "public",
-
-                        table:
-                            "orders",
+                        event: "INSERT",
+                        schema: "public",
+                        table: "orders",
                     },
-                    async (
-                        payload
-                    ) => {
+                    async (payload) => {
 
                         const newOrder =
                             payload.new;
-
 
                         if (
                             currentUser.role !==
@@ -923,42 +937,31 @@ export function AppProvider({
                             return;
                         }
 
-
                         try {
+
                             await fetchOrders();
+
                         } catch (error) {
+
                             console.error(
-                                "Realtime INSERT error:",
+                                "Realtime order insert error:",
                                 error
                             );
                         }
                     }
                 )
 
-
-                // -------------------------------------
-                // UPDATE
-                // -------------------------------------
-
                 .on(
                     "postgres_changes",
                     {
-                        event:
-                            "UPDATE",
-
-                        schema:
-                            "public",
-
-                        table:
-                            "orders",
+                        event: "UPDATE",
+                        schema: "public",
+                        table: "orders",
                     },
-                    async (
-                        payload
-                    ) => {
+                    async (payload) => {
 
                         const updated =
                             payload.new;
-
 
                         if (
                             currentUser.role !==
@@ -973,56 +976,40 @@ export function AppProvider({
                             return;
                         }
 
-
                         try {
+
                             await fetchOrders();
+
                         } catch (error) {
+
                             console.error(
-                                "Realtime UPDATE error:",
+                                "Realtime order update error:",
                                 error
                             );
                         }
                     }
                 )
 
-
-                // -------------------------------------
-                // DELETE
-                // -------------------------------------
-
                 .on(
                     "postgres_changes",
                     {
-                        event:
-                            "DELETE",
-
-                        schema:
-                            "public",
-
-                        table:
-                            "orders",
+                        event: "DELETE",
+                        schema: "public",
+                        table: "orders",
                     },
-                    (
-                        payload
-                    ) => {
+                    (payload) => {
 
                         const deletedId =
                             payload.old?.id;
-
 
                         if (!deletedId) {
                             return;
                         }
 
-
                         setOrders(
-                            (
-                                previous
-                            ) =>
+                            (previous) =>
                                 previous.filter(
-                                    (
-                                        order
-                                    ) =>
+                                    (order) =>
                                         String(
                                             order.id
                                         ) !==
@@ -1034,9 +1021,7 @@ export function AppProvider({
                     }
                 )
 
-
                 .subscribe();
-
 
         return () => {
 
@@ -1050,22 +1035,22 @@ export function AppProvider({
         currentUser?.role,
     ]);
 
-
     // =================================================
-    // REGISTER EMAIL
+    // REGISTER
     // =================================================
 
-    const register = async (
-        payload
-    ) => {
+    const register = async (payload) => {
 
         if (!supabase) {
-
             throw new Error(
-                "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+                "Supabase is not configured."
             );
         }
 
+        const name =
+            String(
+                payload.name || ""
+            ).trim();
 
         const email =
             String(
@@ -1074,16 +1059,21 @@ export function AppProvider({
                 .trim()
                 .toLowerCase();
 
-
         const password =
-            payload.password;
-
-
-        const name =
             String(
-                payload.name || ""
+                payload.password || ""
+            );
+
+        const phone =
+            String(
+                payload.phone || ""
             ).trim();
 
+        if (!name) {
+            throw new Error(
+                "Please enter your name."
+            );
+        }
 
         if (!email) {
             throw new Error(
@@ -1097,12 +1087,11 @@ export function AppProvider({
             );
         }
 
-        if (!name) {
+        if (password.length < 6) {
             throw new Error(
-                "Please enter your name."
+                "Password must be at least 6 characters."
             );
         }
-
 
         const {
             data,
@@ -1118,18 +1107,34 @@ export function AppProvider({
                         name,
 
                         phone:
-                            payload.phone ||
-                            null,
+                            phone || null,
                     },
                 },
             });
-
 
         if (error) {
             throw error;
         }
 
+        // Email confirmation enabled
+        if (
+            data.user &&
+            !data.session
+        ) {
 
+            return {
+                needsEmailConfirmation:
+                    true,
+
+                user:
+                    data.user,
+
+                session:
+                    null,
+            };
+        }
+
+        // Email confirmation disabled
         if (
             data.session &&
             data.user
@@ -1140,10 +1145,9 @@ export function AppProvider({
             );
         }
 
-
         return {
             needsEmailConfirmation:
-                !data.session,
+                false,
 
             user:
                 data.user,
@@ -1153,505 +1157,9 @@ export function AppProvider({
         };
     };
 
-
-    // =====================================================
-    // MSG91 - WAIT FOR WIDGET
-    // =====================================================
-
-  const waitForMSG91 = async (timeout = 10000) => {
-
-    if (
-        window.MSG91_READY &&
-        typeof window.sendOtp === "function"
-    ) {
-        return true;
-    }
-
-
-    if (window.MSG91_READY_PROMISE) {
-
-        try {
-
-            await Promise.race([
-                window.MSG91_READY_PROMISE,
-
-                new Promise(
-                    (_, reject) =>
-                        setTimeout(
-                            () =>
-                                reject(
-                                    new Error(
-                                        "MSG91 widget loading timed out."
-                                    )
-                                ),
-                            timeout
-                        )
-                )
-            ]);
-
-        } catch {
-            // Continue to final validation below.
-        }
-    }
-
-
-    const start =
-        Date.now();
-
-
-    while (
-        Date.now() - start <
-        timeout
-    ) {
-
-        if (
-            typeof window.sendOtp ===
-            "function"
-        ) {
-
-            window.MSG91_READY =
-                true;
-
-            return true;
-        }
-
-
-        await new Promise(
-            (resolve) =>
-                setTimeout(
-                    resolve,
-                    200
-                )
-        );
-    }
-
-
-    return false;
-};
-
-
-    // =====================================================
-    // MSG91 - SEND OTP
-    // =====================================================
-
-    const sendPhoneOtp = async (phone) => {
-
-    const cleanPhone =
-        String(phone || "")
-            .replace(/\D/g, "");
-
-
-    if (
-        !/^[6-9][0-9]{9}$/.test(
-            cleanPhone
-        )
-    ) {
-
-        throw new Error(
-            "Please enter a valid 10-digit Indian mobile number."
-        );
-    }
-
-
-    const ready =
-        await waitForMSG91();
-
-
-    if (!ready) {
-
-        throw new Error(
-            "MSG91 OTP widget is not ready. Please refresh the page and try again."
-        );
-    }
-
-
-    if (
-        typeof window.sendOtp !==
-        "function"
-    ) {
-
-        throw new Error(
-            "MSG91 sendOtp method is unavailable. Make sure exposeMethods is enabled in your MSG91 widget."
-        );
-    }
-
-
-    const fullPhone =
-        `91${cleanPhone}`;
-
-
-    console.log(
-        "MSG91 sending OTP to:",
-        fullPhone
-    );
-
-
-    try {
-
-        const result =
-            await window.sendOtp(
-                fullPhone
-            );
-
-
-        console.log(
-            "MSG91 sendOtp response:",
-            result
-        );
-
-
-        return {
-            success: true,
-
-            phone:
-                `+91${cleanPhone}`,
-
-            data:
-                result,
-        };
-
-    } catch (
-        error
-    ) {
-
-        console.error(
-            "MSG91 sendOtp error:",
-            error
-        );
-
-
-        throw new Error(
-            error?.message ||
-            "Unable to send OTP through MSG91."
-        );
-    }
-};
-
-    // =====================================================
-    // MSG91 - VERIFY OTP
-    // =====================================================
-
- const verifyPhoneOtp = async (phone, otp) => {
-    const cleanPhone = String(phone || "").replace(/\D/g, "");
-    const cleanOtp = String(otp || "").replace(/\D/g, "");
-
-    if (!/^[6-9][0-9]{9}$/.test(cleanPhone)) {
-        throw new Error("Invalid mobile number.");
-    }
-
-    if (cleanOtp.length !== 4) {
-        throw new Error("Please enter the 4-digit OTP.");
-    }
-
-    const ready = await waitForMSG91();
-
-    if (!ready) {
-        throw new Error("MSG91 OTP widget is not ready.");
-    }
-
-    if (typeof window.verifyOtp !== "function") {
-        throw new Error(
-            "MSG91 verifyOtp method is unavailable. Make sure exposeMethods is enabled."
-        );
-    }
-
-    try {
-        // 1. Verify OTP with MSG91
-        const msg91Result = await window.verifyOtp(cleanOtp);
-
-        console.log("MSG91 OTP verified:", msg91Result);
-
-        const normalizedPhone = `+91${cleanPhone}`;
-
-        // 2. Ask Supabase Edge Function to authenticate this phone
-        const { data, error } = await supabase.functions.invoke(
-            "phone-login",
-            {
-                body: {
-                    phone: normalizedPhone,
-                },
-            }
-        );
-
-        if (error) {
-            console.error("Phone login function error:", error);
-            throw error;
-        }
-
-        if (!data?.access_token || !data?.refresh_token) {
-            throw new Error(
-                "Supabase authentication session was not returned."
-            );
-        }
-
-        // 3. Establish Supabase Auth session
-        const { data: sessionData, error: sessionError } =
-            await supabase.auth.setSession({
-                access_token: data.access_token,
-                refresh_token: data.refresh_token,
-            });
-
-        if (sessionError) {
-            throw sessionError;
-        }
-
-        const user = sessionData?.user;
-
-        if (!user) {
-            throw new Error(
-                "Supabase user was not created."
-            );
-        }
-
-        console.log(
-            "Supabase authenticated user:",
-            user.id
-        );
-
-        // 4. Load profile
-        const {
-            data: profile,
-            error: profileError,
-        } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (profileError) {
-            throw profileError;
-        }
-
-        if (!profile) {
-            throw new Error(
-                "Authentication succeeded, but the customer profile was not found."
-            );
-        }
-
-        setCurrentUser(profile);
-
-        return {
-            success: true,
-            phone: normalizedPhone,
-            profile,
-            msg91: msg91Result,
-        };
-
-    } catch (error) {
-        console.error(
-            "MSG91/Supabase verification error:",
-            error
-        );
-
-        throw new Error(
-            error?.message ||
-            "Invalid or expired OTP."
-        );
-    }
-};
-
-
-    // =====================================================
-    // MSG91 - RESEND OTP
-    // =====================================================
-
-    const resendPhoneOtp = async (
-        phone
-    ) => {
-
-        const available =
-            await waitForMSG91();
-
-
-        if (!available) {
-
-            throw new Error(
-                "MSG91 OTP widget is not ready."
-            );
-        }
-
-
-        return new Promise(
-            (
-                resolve,
-                reject
-            ) => {
-
-                const success =
-                    (data) => {
-
-                        console.log(
-                            "MSG91 OTP resent:",
-                            data
-                        );
-
-
-                        resolve({
-                            success:
-                                true,
-
-                            data,
-                        });
-                    };
-
-
-                const failure =
-                    (error) => {
-
-                        console.error(
-                            "MSG91 resend error:",
-                            error
-                        );
-
-
-                        reject(
-                            new Error(
-                                getMSG91ErrorMessage(
-                                    error,
-                                    "Unable to resend OTP."
-                                )
-                            )
-                        );
-                    };
-
-
-                try {
-
-                    /*
-                     * null = default retry
-                     * channel configured in
-                     * MSG91 widget.
-                     */
-
-                    window.retryOtp(
-                        null,
-                        success,
-                        failure
-                    );
-
-                } catch (error) {
-
-                    failure(error);
-                }
-            }
-        );
-    };
-
-
-    // =====================================================
-    // FIND / CREATE PHONE PROFILE
-    // =====================================================
-
-    const findOrCreatePhoneProfile =
-        async (
-            phone
-        ) => {
-
-            if (!supabase) {
-
-                throw new Error(
-                    "Supabase is not configured."
-                );
-            }
-
-
-            const normalized =
-                normalizeIndianPhone(
-                    phone
-                );
-
-
-            // -----------------------------------------
-            // FIND EXISTING PROFILE
-            // -----------------------------------------
-
-            const {
-                data:
-                    existing,
-                error:
-                    findError,
-            } = await supabase
-                .from("profiles")
-                .select("*")
-                .eq(
-                    "phone",
-                    normalized
-                )
-                .maybeSingle();
-
-
-            if (
-                findError
-            ) {
-
-                console.error(
-                    "Phone profile lookup error:",
-                    findError
-                );
-            }
-
-
-            if (existing) {
-
-                setCurrentUser(
-                    existing
-                );
-
-                return existing;
-            }
-
-
-            /*
-             * IMPORTANT:
-             *
-             * MSG91 authentication is separate
-             * from Supabase Auth.
-             *
-             * There is therefore no
-             * auth.users.id available here.
-             *
-             * We do NOT insert a fake UUID into
-             * profiles.id.
-             *
-             * If your profiles.id has a FK to
-             * auth.users(id), phone-only login
-             * requires a server-side Supabase
-             * Auth flow.
-             */
-
-            throw new Error(
-                "MSG91 OTP was verified, but this project still needs a Supabase Auth user for phone-only login. Your profiles.id appears to depend on auth.users. Keep email login for now, or add a Supabase Edge Function to create a session after MSG91 verification."
-            );
-        };
-
-
-    // =====================================================
-    // LOGIN WITH PHONE
-    // =====================================================
-
-    const loginWithPhone = async (
-        phone,
-        otp
-    ) => {
-
-        if (!otp) {
-
-            return sendPhoneOtp(
-                phone
-            );
-        }
-
-
-        return verifyPhoneOtp(
-            phone,
-            otp
-        );
-    };
-
-
-    // =====================================================
+    // =================================================
     // EMAIL LOGIN
-    // =====================================================
+    // =================================================
 
     const login = async (
         email,
@@ -1659,28 +1167,27 @@ export function AppProvider({
     ) => {
 
         if (!supabase) {
-
             throw new Error(
-                "Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY."
+                "Supabase is not configured."
             );
         }
 
-
         const cleanEmail =
-            String(
-                email || ""
-            )
+            String(email || "")
                 .trim()
                 .toLowerCase();
 
-
         if (!cleanEmail) {
-
             throw new Error(
                 "Please enter your email."
             );
         }
 
+        if (!password) {
+            throw new Error(
+                "Please enter your password."
+            );
+        }
 
         const {
             data,
@@ -1693,14 +1200,12 @@ export function AppProvider({
                 password,
             });
 
-
         if (error) {
 
             const message =
                 String(
                     error.message || ""
                 ).toLowerCase();
-
 
             if (
                 message.includes(
@@ -1710,76 +1215,59 @@ export function AppProvider({
                     "email not verified"
                 )
             ) {
-
                 throw new Error(
                     "Your email has not been verified yet. Please check your email and click the verification link."
                 );
             }
-
 
             throw new Error(
                 "Invalid email or password. Please check your details and try again."
             );
         }
 
-
         if (!data?.user) {
-
             throw new Error(
                 "Unable to sign in. Please try again."
             );
         }
-
 
         return loadProfile(
             data.user
         );
     };
 
-
-    // =====================================================
-    // RESEND EMAIL
-    // =====================================================
+    // =================================================
+    // RESEND EMAIL VERIFICATION
+    // =================================================
 
     const resendVerificationEmail =
-        async (
-            email
-        ) => {
+        async (email) => {
 
             if (!supabase) {
-
                 throw new Error(
                     "Supabase is not configured."
                 );
             }
 
-
             const cleanEmail =
-                String(
-                    email || ""
-                )
+                String(email || "")
                     .trim()
                     .toLowerCase();
 
-
             if (!cleanEmail) {
-
                 throw new Error(
                     "Please enter your email address."
                 );
             }
 
-
             const redirectUrl =
                 `${window.location.origin}/login`;
-
 
             const {
                 error,
             } =
                 await supabase.auth.resend({
-                    type:
-                        "signup",
+                    type: "signup",
 
                     email:
                         cleanEmail,
@@ -1790,19 +1278,16 @@ export function AppProvider({
                     },
                 });
 
-
             if (error) {
                 throw error;
             }
 
-
             return true;
         };
 
-
-    // =====================================================
+    // =================================================
     // LOGOUT
-    // =====================================================
+    // =================================================
 
     const logout = async () => {
 
@@ -1813,12 +1298,10 @@ export function AppProvider({
             } =
                 await supabase.auth.signOut();
 
-
             if (error) {
                 throw error;
             }
         }
-
 
         setCurrentUser(null);
 
@@ -1826,13 +1309,14 @@ export function AppProvider({
 
         setUsers([]);
 
+        setSubscriptions([]);
+
         setCloudError("");
     };
 
-
-    // =====================================================
+    // =================================================
     // CART
-    // =====================================================
+    // =================================================
 
     const addToCart = (
         productId,
@@ -1840,26 +1324,19 @@ export function AppProvider({
     ) => {
 
         setCart(
-            (
-                previous
-            ) => {
+            (previous) => {
 
                 const found =
                     previous.find(
-                        (
-                            item
-                        ) =>
+                        (item) =>
                             item.productId ===
                             productId
                     );
 
-
                 if (found) {
 
                     return previous.map(
-                        (
-                            item
-                        ) =>
+                        (item) =>
                             item.productId ===
                             productId
                                 ? {
@@ -1872,7 +1349,6 @@ export function AppProvider({
                                 : item
                     );
                 }
-
 
                 return [
                     ...previous,
@@ -1887,28 +1363,21 @@ export function AppProvider({
         );
     };
 
-
     const updateCart = (
         productId,
         qty
     ) => {
 
         setCart(
-            (
-                previous
-            ) =>
+            (previous) =>
                 qty <= 0
                     ? previous.filter(
-                        (
-                            item
-                        ) =>
+                        (item) =>
                             item.productId !==
                             productId
                     )
                     : previous.map(
-                        (
-                            item
-                        ) =>
+                        (item) =>
                             item.productId ===
                             productId
                                 ? {
@@ -1921,87 +1390,67 @@ export function AppProvider({
         );
     };
 
-
     const clearCart = () => {
-
         setCart([]);
     };
 
-
-    // =====================================================
+    // =================================================
     // CART ITEMS
-    // =====================================================
+    // =================================================
 
     const cartItems =
-        useMemo(
-            () => {
+        useMemo(() => {
 
-                return cart
-                    .map(
-                        (
-                            item
-                        ) => {
+            return cart
+                .map((item) => {
 
-                            const product =
-                                products.find(
-                                    (
-                                        p
-                                    ) =>
-                                        p.id ===
-                                        item.productId
-                                );
+                    const product =
+                        products.find(
+                            (p) =>
+                                p.id ===
+                                item.productId
+                        );
 
+                    if (!product) {
+                        return null;
+                    }
 
-                            if (!product) {
-                                return null;
-                            }
+                    return {
+                        ...product,
 
+                        qty:
+                            item.qty,
 
-                            return {
-                                ...product,
+                        lineTotal:
+                            product.price *
+                            item.qty,
+                    };
+                })
+                .filter(Boolean);
 
-                                qty:
-                                    item.qty,
+        }, [cart]);
 
-                                lineTotal:
-                                    product.price *
-                                    item.qty,
-                            };
-                        }
-                    )
-                    .filter(Boolean);
-
-            },
-            [cart]
-        );
-
-
-    // =====================================================
+    // =================================================
     // CART TOTAL
-    // =====================================================
+    // =================================================
 
     const cartTotal =
         cartItems.reduce(
-            (
-                sum,
-                item
-            ) =>
+            (sum, item) =>
                 sum +
                 item.lineTotal,
             0
         );
 
-
-    // =====================================================
+    // =================================================
     // DELIVERY FEE
-    // =====================================================
+    // =================================================
 
     const deliveryFee = 0;
 
-
-    // =====================================================
+    // =================================================
     // CREATE ORDER
-    // =====================================================
+    // =================================================
 
     const createOrder = async (
         customer
@@ -2011,26 +1460,20 @@ export function AppProvider({
             !supabase ||
             !currentUser
         ) {
-
             throw new Error(
                 "Please sign in before ordering."
             );
         }
 
-
         if (!cartItems.length) {
-
             throw new Error(
                 "Your cart is empty."
             );
         }
 
-
         const payload =
             cartItems.map(
-                (
-                    item
-                ) => ({
+                (item) => ({
                     product_id:
                         item.id,
 
@@ -2038,7 +1481,6 @@ export function AppProvider({
                         item.qty,
                 })
             );
-
 
         const {
             data,
@@ -2086,34 +1528,25 @@ export function AppProvider({
                 }
             );
 
-
         if (error) {
             throw error;
         }
 
-
         clearCart();
 
-
         const result =
-            typeof data ===
-            "string"
+            typeof data === "string"
                 ? {
-                    id:
-                        data,
+                    id: data,
                 }
                 : data;
-
 
         const loaded =
             await fetchOrders();
 
-
         const created =
             loaded.find(
-                (
-                    order
-                ) =>
+                (order) =>
                     String(
                         order.id
                     ) ===
@@ -2121,7 +1554,6 @@ export function AppProvider({
                         result.id
                     )
             );
-
 
         return (
             created || {
@@ -2134,10 +1566,9 @@ export function AppProvider({
         );
     };
 
-
-    // =====================================================
+    // =================================================
     // UPDATE ORDER STATUS
-    // =====================================================
+    // =================================================
 
     const updateOrderStatus =
         async (
@@ -2150,12 +1581,10 @@ export function AppProvider({
                 currentUser?.role !==
                 "admin"
             ) {
-
                 throw new Error(
                     "Admin access required."
                 );
             }
-
 
             const {
                 error,
@@ -2171,44 +1600,35 @@ export function AppProvider({
                     }
                 );
 
-
             if (error) {
                 throw error;
             }
 
-
             await fetchOrders();
         };
 
-
-    // =====================================================
+    // =================================================
     // DELETE ORDER
-    // =====================================================
+    // =================================================
 
     const deleteOrder =
-        async (
-            orderId
-        ) => {
+        async (orderId) => {
 
             if (
                 !supabase ||
                 currentUser?.role !==
                 "admin"
             ) {
-
                 throw new Error(
                     "Admin access required."
                 );
             }
 
-
             if (!orderId) {
-
                 throw new Error(
                     "Order ID is required."
                 );
             }
-
 
             const {
                 error,
@@ -2221,20 +1641,14 @@ export function AppProvider({
                     }
                 );
 
-
             if (error) {
                 throw error;
             }
 
-
             setOrders(
-                (
-                    previous
-                ) =>
+                (previous) =>
                     previous.filter(
-                        (
-                            order
-                        ) =>
+                        (order) =>
                             String(
                                 order.id
                             ) !==
@@ -2245,15 +1659,12 @@ export function AppProvider({
             );
         };
 
-
-    // =====================================================
+    // =================================================
     // UPDATE PROFILE
-    // =====================================================
+    // =================================================
 
     const updateProfile =
-        async (
-            patch
-        ) => {
+        async (patch) => {
 
             if (
                 !supabase ||
@@ -2262,9 +1673,7 @@ export function AppProvider({
                 return;
             }
 
-
             const allowed = {};
-
 
             if (
                 patch.name !==
@@ -2276,6 +1685,9 @@ export function AppProvider({
                     ).trim();
             }
 
+            // Phone is still allowed as a
+            // normal profile/contact field.
+            // It is NOT used for authentication.
 
             if (
                 patch.phone !==
@@ -2283,12 +1695,11 @@ export function AppProvider({
             ) {
                 allowed.phone =
                     patch.phone
-                        ? normalizeIndianPhone(
+                        ? String(
                             patch.phone
-                        )
+                        ).trim()
                         : null;
             }
-
 
             if (
                 patch.address !==
@@ -2298,7 +1709,6 @@ export function AppProvider({
                     patch.address;
             }
 
-
             if (
                 patch.city !==
                 undefined
@@ -2306,7 +1716,6 @@ export function AppProvider({
                 allowed.city =
                     patch.city;
             }
-
 
             if (
                 patch.pincode !==
@@ -2316,16 +1725,13 @@ export function AppProvider({
                     patch.pincode;
             }
 
-
             const {
                 data,
                 error,
             } =
                 await supabase
                     .from("profiles")
-                    .update(
-                        allowed
-                    )
+                    .update(allowed)
                     .eq(
                         "id",
                         currentUser.id
@@ -2333,41 +1739,36 @@ export function AppProvider({
                     .select("*")
                     .single();
 
-
             if (error) {
                 throw error;
             }
 
-
-            setCurrentUser(
-                data
-            );
-
+            setCurrentUser(data);
 
             return data;
         };
 
-
-    // =====================================================
+    // =================================================
     // CLEAR CLOUD ERROR
-    // =====================================================
+    // =================================================
 
     const clearCloudError = () => {
-
         setCloudError("");
     };
 
-
-    // =====================================================
-    // CONTEXT
-    // =====================================================
+    // =================================================
+    // CONTEXT VALUE
+    // =================================================
 
     const value = {
 
         // DATA
+
         users,
 
         orders,
+
+        subscriptions,
 
         currentUser,
 
@@ -2385,44 +1786,38 @@ export function AppProvider({
 
         ordersLoading,
 
+        subscriptionsLoading,
+
         cloudError,
 
         supabaseConfigured,
 
-
         // SETTINGS
+
         setTheme,
 
         clearCloudError,
 
-
         // AUTH
+
         register,
 
         login,
-
-        sendPhoneOtp,
-
-        verifyPhoneOtp,
-
-        resendPhoneOtp,
-
-        loginWithPhone,
 
         resendVerificationEmail,
 
         logout,
 
-
         // CART
+
         addToCart,
 
         updateCart,
 
         clearCart,
 
-
         // ORDERS
+
         createOrder,
 
         updateOrderStatus,
@@ -2432,16 +1827,20 @@ export function AppProvider({
         refreshOrders:
             fetchOrders,
 
+        // SUBSCRIPTIONS
+
+        refreshSubscriptions:
+            fetchSubscriptions,
 
         // USERS
+
         refreshUsers:
             fetchUsers,
 
-
         // PROFILE
+
         updateProfile,
     };
-
 
     return (
         <AppContext.Provider
@@ -2451,68 +1850,6 @@ export function AppProvider({
         </AppContext.Provider>
     );
 }
-
-
-// =====================================================
-// MSG91 ERROR HELPER
-// =====================================================
-
-function getMSG91ErrorMessage(
-    error,
-    fallback
-) {
-
-    if (!error) {
-        return fallback;
-    }
-
-
-    if (
-        typeof error ===
-        "string"
-    ) {
-        return error;
-    }
-
-
-    if (
-        error.message
-    ) {
-        return error.message;
-    }
-
-
-    if (
-        error.error
-    ) {
-        return typeof error.error ===
-            "string"
-            ? error.error
-            : JSON.stringify(
-                error.error
-            );
-    }
-
-
-    if (
-        error.type
-    ) {
-        return error.type;
-    }
-
-
-    try {
-
-        return JSON.stringify(
-            error
-        );
-
-    } catch {
-
-        return fallback;
-    }
-}
-
 
 // =====================================================
 // USE APP

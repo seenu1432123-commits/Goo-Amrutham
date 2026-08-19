@@ -1,4 +1,4 @@
-    import React from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   FaLeaf,
@@ -6,255 +6,246 @@ import {
   FaGlassWhiskey,
   FaSeedling,
   FaArrowRight,
+  FaCheck,
+  FaHeart,
+  FaStar,
+  FaRecycle,
+  FaHome,
 } from "react-icons/fa";
 
-import ProductCard from "../components/ProductCard";
-import { products } from "../data/products";
 import { testimonials, faqs } from "../data/content";
 
 import hero from "../assets/images/hero-field.jpeg";
 import family from "../assets/images/family-organic.png";
 import homeBottle from "../assets/images/home-bottlee.jpg";
-import logo from "../assets/images/logo.jpeg";
 import familycurd from "../assets/images/curd-family.png";
 
 export default function Home() {
+
+  /* =====================================================
+     SCROLL REVEAL
+  ===================================================== */
+
+  useEffect(() => {
+
+    const elements =
+      document.querySelectorAll(".goo-reveal");
+
+    const observer =
+      new IntersectionObserver(
+        (entries) => {
+
+          entries.forEach((entry) => {
+
+            if (entry.isIntersecting) {
+
+              entry.target.classList.add(
+                "goo-visible"
+              );
+
+            }
+
+          });
+
+        },
+        {
+          threshold: 0.12,
+        }
+      );
+
+    elements.forEach((element) => {
+      observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+
+  }, []);
+
   return (
-    <main>
+
+    <main className="goo-home">
 
       {/* =====================================================
-          HERO IMAGE SLIDER
+          PREMIUM HERO
       ===================================================== */}
 
-      <section className="goo-slider-section">
+      <section className="goo-premium-hero">
 
-        <div
-          id="gooHeroCarousel"
-          className="carousel slide carousel-fade"
-          data-bs-ride="carousel"
-          data-bs-interval="4000"
-        >
+        <img
+          src={hero}
+          alt="Goo Amrutham farm"
+          className="goo-hero-bg"
+        />
 
-          {/* SLIDE INDICATORS */}
-          <div className="carousel-indicators">
-            <button
-              type="button"
-              data-bs-target="#gooHeroCarousel"
-              data-bs-slide-to="0"
-              className="active"
-              aria-current="true"
-              aria-label="Slide 1"
-            ></button>
+        <div className="goo-hero-gradient" />
 
-            <button
-              type="button"
-              data-bs-target="#gooHeroCarousel"
-              data-bs-slide-to="1"
-              aria-label="Slide 2"
-            ></button>
+        {/* Floating organic particles */}
 
-            <button
-              type="button"
-              data-bs-target="#gooHeroCarousel"
-              data-bs-slide-to="2"
-              aria-label="Slide 3"
-            ></button>
+        <div className="goo-particle particle-one">
+          <FaLeaf />
+        </div>
+
+        <div className="goo-particle particle-two">
+          <FaLeaf />
+        </div>
+
+        <div className="goo-particle particle-three">
+          <FaSeedling />
+        </div>
+
+        <div className="container">
+
+          <div className="goo-hero-content">
+
+            <div className="goo-pill">
+
+              <span className="goo-pulse-dot" />
+
+              FARM FRESH • EVERY MORNING
+
+            </div>
+
+            <h1>
+
+              Pure mornings.
+
+              <br />
+
+              <span>
+                Naturally delivered.
+              </span>
+
+            </h1>
+
+            <p>
+
+              Fresh Goo Amrutham milk,
+              thoughtfully sourced from our farms
+              and delivered straight to your home.
+
+            </p>
+
+            <div className="goo-hero-buttons">
+
+              <Link
+                to="/products"
+                className="goo-primary-btn"
+              >
+
+                Start Your Morning
+
+                <FaArrowRight />
+
+              </Link>
+
+              <Link
+                to="/about"
+                className="goo-glass-btn"
+              >
+
+                Discover Goo Amrutham
+
+              </Link>
+
+            </div>
+
+            <div className="goo-mini-trust">
+
+              <span>
+                <FaCheck />
+                Fresh daily
+              </span>
+
+              <span>
+                <FaCheck />
+                Reusable glass
+              </span>
+
+              <span>
+                <FaCheck />
+                Home delivery
+              </span>
+
+            </div>
+
           </div>
 
-          <div className="carousel-inner">
+        </div>
 
-            {/* =================================================
-                SLIDE 1
-            ================================================= */}
+        {/* Bottom wave */}
 
-            <div className="carousel-item active">
+        <div className="goo-hero-bottom" />
 
-              <img
-                src={hero}
-                className="goo-slide-image"
-                alt="Fresh Goo Amrutham milk from green farms"
-              />
-
-              <div className="goo-slide-overlay"></div>
-
-              <div className="goo-slide-content">
-                <span className="eyebrow slider-eyebrow">
-                  <FaLeaf /> FROM OUR FARMS TO YOUR HOME
-                </span>
-
-                <h1>
-                  Fresh milk.
-                  <br />
-                  <span>Simple delivery.</span>
-                </h1>
-
-                <p>
-                  Fresh and natural Goo Amrutham milk delivered
-                  straight to your doorstep.
-                </p>
-
-                <div className="slider-buttons">
-                  <Link
-                    to="/products"
-                    className="btn btn-success btn-lg rounded-pill px-4"
-                  >
-                    Order Fresh Milk <FaArrowRight />
-                  </Link>
-
-                  <Link
-                    to="/about"
-                    className="btn btn-light btn-lg rounded-pill px-4"
-                  >
-                    Our Story
-                  </Link>
-                </div>
-
-                <div className="slider-trust">
-                  <span>✓ Fresh daily</span>
-                  <span>✓ Glass bottle</span>
-                  <span>✓ Home delivery</span>
-                </div>
-              </div>
-
-            
-
-            </div>
+      </section>
 
 
-            {/* =================================================
-                SLIDE 2
-            ================================================= */}
+      {/* =====================================================
+          FLOATING TRUST CARDS
+      ===================================================== */}
 
-            <div className="carousel-item">
+      <section className="goo-floating-trust">
 
-              <img
-                src={familycurd}
-                className="goo-slide-image"
-                alt="Family enjoying Goo Amrutham milk"
-              />
+        <div className="container">
 
-              <div className="goo-slide-overlay"></div>
+          <div className="goo-trust-grid">
 
-              <div className="goo-slide-content">
+            {[
+              [
+                FaLeaf,
+                "Natural",
+                "Thoughtful sourcing",
+              ],
+              [
+                FaGlassWhiskey,
+                "Reusable",
+                "Glass bottle delivery",
+              ],
+              [
+                FaTruck,
+                "Reliable",
+                "Doorstep delivery",
+              ],
+              [
+                FaHeart,
+                "Family First",
+                "Made with care",
+              ],
+            ].map(
+              ([Icon, title, text], index) => (
 
-                <span className="eyebrow slider-eyebrow">
-                  <FaSeedling /> GOODNESS FOR EVERY FAMILY
-                </span>
-
-                <h1>
-                  Pure goodness.
-                  <br />
-                  <span>Made for your family.</span>
-                </h1>
-
-                <p>
-                  Bring natural goodness and freshness to your
-                  family's everyday routine.
-                </p>
-
-                <div className="slider-buttons">
-
-                  <Link
-                    to="/products"
-                    className="btn btn-success btn-lg rounded-pill px-4"
-                  >
-                    Shop Now <FaArrowRight />
-                  </Link>
-
-                  <Link
-                    to="/about"
-                    className="btn btn-light btn-lg rounded-pill px-4"
-                  >
-                    Learn More
-                  </Link>
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            {/* =================================================
-                SLIDE 3
-            ================================================= */}
-
-            <div className="carousel-item">
-
-              <img
-                src={homeBottle}
-                className="goo-slide-image"
-                alt="Goo Amrutham milk bottle"
-              />
-
-              <div className="goo-slide-overlay"></div>
-
-              <div className="goo-slide-content slider-product-content">
-
-
-                <span className="eyebrow slider-eyebrow">
-                  <FaGlassWhiskey /> FRESH • PURE • NATURAL
-                </span>
-
-                <h1>
-                  From our farms
-                  <br />
-                  <span>to your home.</span>
-                </h1>
-
-                <p>
-                  Fresh milk in reusable glass bottles,
-                  delivered with care.
-                </p>
-
-                <Link
-                  to="/products"
-                  className="btn btn-success btn-lg rounded-pill px-4"
+                <div
+                  className="goo-trust-item goo-reveal"
+                  key={title}
+                  style={{
+                    transitionDelay:
+                      `${index * 80}ms`,
+                  }}
                 >
-                  Start Ordering <FaArrowRight />
-                </Link>
 
-              </div>
+                  <div className="goo-icon-circle">
 
-            </div>
+                    <Icon />
+
+                  </div>
+
+                  <div>
+
+                    <strong>
+                      {title}
+                    </strong>
+
+                    <span>
+                      {text}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              )
+            )}
 
           </div>
-
-
-          {/* PREVIOUS BUTTON */}
-          <button
-            className="carousel-control-prev"
-            type="button"
-            data-bs-target="#gooHeroCarousel"
-            data-bs-slide="prev"
-          >
-            <span
-              className="carousel-control-prev-icon"
-              aria-hidden="true"
-            ></span>
-
-            <span className="visually-hidden">
-              Previous
-            </span>
-          </button>
-
-
-          {/* NEXT BUTTON */}
-          <button
-            className="carousel-control-next"
-            type="button"
-            data-bs-target="#gooHeroCarousel"
-            data-bs-slide="next"
-          >
-            <span
-              className="carousel-control-next-icon"
-              aria-hidden="true"
-            ></span>
-
-            <span className="visually-hidden">
-              Next
-            </span>
-          </button>
 
         </div>
 
@@ -262,96 +253,106 @@ export default function Home() {
 
 
       {/* =====================================================
-          TRUST STRIP
+          BRAND INTRO
       ===================================================== */}
 
-      <section className="trust-strip">
+      <section className="goo-story">
+
         <div className="container">
-          <div className="row g-3">
 
-            {[
-              [FaLeaf, "Natural focus", "Thoughtful sourcing"],
-              [FaGlassWhiskey, "Eco packaging", "Reusable glass bottle"],
-              [FaTruck, "Home delivery", "Choose your slot"],
-              [FaSeedling, "Farmer first", "Support local farming"],
-            ].map(([Icon, a, b]) => (
+          <div className="row align-items-center g-5">
 
-              <div
-                className="col-6 col-lg-3"
-                key={a}
-              >
+            <div className="col-lg-6 goo-reveal">
 
-                <div className="trust-card">
+              <div className="goo-image-stack">
 
-                  <Icon />
+                <img
+                  src={family}
+                  alt="Goo Amrutham family"
+                  className="goo-story-image"
+                />
+
+                <div className="goo-floating-badge">
+
+                  <FaLeaf />
 
                   <div>
-                    <b>{a}</b>
-                    <small>{b}</small>
+
+                    <strong>
+                      Farm to Home
+                    </strong>
+
+                    <span>
+                      With care
+                    </span>
+
                   </div>
 
                 </div>
 
               </div>
 
-            ))}
-
-          </div>
-        </div>
-      </section>
-
-
-      {/* =====================================================
-          STORY
-      ===================================================== */}
-
-      <section className="story-section section-pad">
-
-        <div className="container">
-
-          <div className="row align-items-center g-5">
-
-            <div className="col-lg-6">
-
-              <img
-                className="story-img"
-                src={family}
-                alt="Family enjoying milk"
-              />
-
             </div>
 
-            <div className="col-lg-6">
 
-              <span className="eyebrow">
+            <div className="col-lg-6 goo-reveal">
+
+              <span className="goo-label">
+
                 THE GOO AMRUTHAM WAY
+
               </span>
 
               <h2>
-                From the farm to your family table.
+
+                Your morning deserves
+                <span> something better.</span>
+
               </h2>
 
-              <p>
-                Our website is designed around one simple idea:
-                make ordering local milk as easy as ordering
-                anything online, while keeping the experience
-                warm and personal.
+              <p className="goo-large-text">
+
+                We believe milk should feel simple,
+                fresh and personal. Goo Amrutham
+                brings the farm closer to your family
+                through a thoughtful everyday
+                delivery experience.
+
               </p>
 
-              <div className="check-list">
+              <div className="goo-check-list">
 
-                <div>✓ Easy online ordering</div>
-                <div>✓ WhatsApp order sharing</div>
-                <div>✓ Order status tracking</div>
-                <div>✓ Quick reorder from history</div>
+                <div>
+                  <FaCheck />
+                  Easy online ordering
+                </div>
+
+                <div>
+                  <FaCheck />
+                  Convenient home delivery
+                </div>
+
+                <div>
+                  <FaCheck />
+                  Simple subscriptions
+                </div>
+
+                <div>
+                  <FaCheck />
+                  Order tracking
+                </div>
 
               </div>
 
               <Link
                 to="/about"
-                className="btn btn-dark rounded-pill mt-3"
+                className="goo-dark-btn"
               >
-                Discover our story
+
+                Our Story
+
+                <FaArrowRight />
+
               </Link>
 
             </div>
@@ -364,102 +365,101 @@ export default function Home() {
 
 
       {/* =====================================================
-          WHY US
+          FARM → HOME EXPERIENCE
       ===================================================== */}
 
-      <section className="section-pad">
+      <section className="goo-process-section">
 
-        <div className="container">
+        <div className="goo-process-bg" />
 
-          <div className="section-heading">
+        <div className="container position-relative">
 
-            <div>
+          <div className="text-center goo-reveal">
 
-              <span className="eyebrow">
-                WHY US
-              </span>
+            <span className="goo-label light-label">
 
-              <h2>
-                Built for everyday families
-              </h2>
+              FROM FARM TO YOUR DOOR
 
-            </div>
+            </span>
+
+            <h2 className="goo-white-heading">
+
+              A simpler journey
+              <br />
+
+              <span>to your morning.</span>
+
+            </h2>
 
           </div>
 
-          <div className="row g-4">
+
+          <div className="goo-process-line">
 
             {[
-              "Fresh & convenient",
-              "Track every order",
-              "WhatsApp support",
-              "Simple subscriptions",
-            ].map((x, i) => (
+              [
+                "01",
+                FaSeedling,
+                "Our Farms",
+                "Carefully sourced from local farms.",
+              ],
 
-              <div
-                className="col-sm-6 col-lg-3"
-                key={x}
-              >
+              [
+                "02",
+                FaGlassWhiskey,
+                "Prepared",
+                "Handled with freshness in mind.",
+              ],
 
-                <div className="feature-box">
+              [
+                "03",
+                FaTruck,
+                "Delivered",
+                "Brought directly to your doorstep.",
+              ],
 
-                  <div className="feature-num">
-                    0{i + 1}
+              [
+                "04",
+                FaHome,
+                "Your Home",
+                "Ready for your family's morning.",
+              ],
+            ].map(
+              ([number, Icon, title, text], index) => (
+
+                <div
+                  className="goo-process-card goo-reveal"
+                  key={number}
+                  style={{
+                    transitionDelay:
+                      `${index * 120}ms`,
+                  }}
+                >
+
+                  <div className="goo-process-number">
+
+                    {number}
+
                   </div>
 
-                  <h5>{x}</h5>
+                  <div className="goo-process-icon">
+
+                    <Icon />
+
+                  </div>
+
+                  <h4>
+                    {title}
+                  </h4>
 
                   <p>
-                    Everything you need for a smooth
-                    milk delivery routine.
+                    {text}
                   </p>
 
                 </div>
 
-              </div>
-
-            ))}
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      {/* =====================================================
-          CTA
-      ===================================================== */}
-
-      <section className="cta-section">
-
-        <div className="container">
-
-          <div className="cta-card">
-
-            <div>
-
-              <span className="eyebrow">
-                READY WHEN YOU ARE
-              </span>
-
-              <h2>
-                Make your morning milk one tap away.
-              </h2>
-
-              <p>
-                Sign in, add your quantity and place your
-                order in minutes.
-              </p>
-
-            </div>
-
-            <Link
-              to="/products"
-              className="btn btn-light btn-lg rounded-pill"
-            >
-              Start Ordering
-            </Link>
+              )
+            )}
 
           </div>
 
@@ -469,74 +469,280 @@ export default function Home() {
 
 
       {/* =====================================================
-          ORDER TRACKING
+          PREMIUM FAMILY SECTION
       ===================================================== */}
 
-      <section className="section-pad">
+      <section className="goo-family-section">
 
         <div className="container">
 
           <div className="row align-items-center g-5">
 
-            <div className="col-lg-5">
+            <div className="col-lg-6 order-lg-2 goo-reveal">
 
-              <img
-                src={homeBottle}
-                className="clean-bottle"
-                alt="Goo Amrutham milk bottle"
-              />
+              <div className="goo-family-image-wrap">
+
+                <img
+                  src={familycurd}
+                  alt="Family enjoying Goo Amrutham"
+                  className="goo-family-image"
+                />
+
+                <div className="goo-image-glow" />
+
+              </div>
 
             </div>
 
-            <div className="col-lg-7">
 
-              <span className="eyebrow">
-                A BETTER ROUTINE
+            <div className="col-lg-6 order-lg-1 goo-reveal">
+
+              <span className="goo-label">
+
+                MADE FOR REAL LIFE
+
               </span>
 
               <h2>
-                Know where your order is.
+
+                Goodness that
+                <span> fits your routine.</span>
+
+              </h2>
+
+              <p className="goo-large-text">
+
+                Whether it is your morning coffee,
+                children's breakfast or a quiet evening
+                at home, Goo Amrutham is designed to
+                become a simple part of everyday life.
+
+              </p>
+
+
+              <div className="goo-stat-row">
+
+                <div>
+
+                  <strong>
+                    100%
+                  </strong>
+
+                  <span>
+                    Care driven
+                  </span>
+
+                </div>
+
+                <div>
+
+                  <strong>
+                    24/7
+                  </strong>
+
+                  <span>
+                    Easy ordering
+                  </span>
+
+                </div>
+
+                <div>
+
+                  <strong>
+                    1 tap
+                  </strong>
+
+                  <span>
+                    Reordering
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* =====================================================
+          ECO SECTION
+      ===================================================== */}
+
+      <section className="goo-eco-section">
+
+        <div className="container">
+
+          <div className="goo-eco-card goo-reveal">
+
+            <div className="goo-eco-content">
+
+              <div className="goo-eco-icon">
+
+                <FaRecycle />
+
+              </div>
+
+              <span className="goo-label">
+
+                A LITTLE BETTER FOR TOMORROW
+
+              </span>
+
+              <h2>
+
+                Fresh milk.
+                <br />
+                Less waste.
+
               </h2>
 
               <p>
-                Once you place an order, your account keeps
-                the details in one place. Check status,
-                delivery slot, order total and reorder in
-                seconds.
+
+                Our reusable glass bottle experience
+                helps make your everyday milk routine
+                more thoughtful.
+
               </p>
 
-              <div className="row g-3">
+              <Link
+                to="/about"
+                className="goo-light-green-btn"
+              >
 
-                <div className="col-sm-6">
+                Learn More
 
-                  <div className="soft-card">
+                <FaArrowRight />
 
-                    <b>
-                      Live status timeline
-                    </b>
+              </Link>
 
-                    <small>
-                      Placed → Confirmed → Preparing →
-                      Delivery → Delivered
-                    </small>
+            </div>
 
+            <div className="goo-eco-decoration">
+
+              <FaLeaf />
+
+              <FaLeaf />
+
+              <FaSeedling />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* =====================================================
+          BOTTLE FEATURE
+      ===================================================== */}
+
+      <section className="goo-bottle-section">
+
+        <div className="container">
+
+          <div className="row align-items-center">
+
+            <div className="col-lg-5 goo-reveal">
+
+              <div className="goo-bottle-wrap">
+
+                <div className="goo-bottle-orbit" />
+
+                <img
+                  src={homeBottle}
+                  alt="Goo Amrutham bottle"
+                  className="goo-bottle"
+                />
+
+              </div>
+
+            </div>
+
+
+            <div className="col-lg-7 goo-reveal">
+
+              <span className="goo-label">
+
+                YOUR MILK ROUTINE, SIMPLIFIED
+
+              </span>
+
+              <h2>
+
+                Everything you need.
+                <span> Nothing complicated.</span>
+
+              </h2>
+
+              <p className="goo-large-text">
+
+                Your account keeps your delivery
+                experience organized, from ordering
+                to tracking and reordering.
+
+              </p>
+
+              <div className="goo-feature-list">
+
+                <div>
+
+                  <span>
+                    01
+                  </span>
+
+                  <div>
+                    <strong>
+                      Easy ordering
+                    </strong>
+
+                    <p>
+                      Choose what you need in seconds.
+                    </p>
                   </div>
 
                 </div>
 
-                <div className="col-sm-6">
+                <div>
 
-                  <div className="soft-card">
+                  <span>
+                    02
+                  </span>
 
-                    <b>
-                      Fast reorder
-                    </b>
+                  <div>
+                    <strong>
+                      Track your order
+                    </strong>
 
-                    <small>
-                      Repeat a previous basket without
-                      rebuilding it.
-                    </small>
+                    <p>
+                      Stay updated from confirmation
+                      to delivery.
+                    </p>
+                  </div>
 
+                </div>
+
+                <div>
+
+                  <span>
+                    03
+                  </span>
+
+                  <div>
+                    <strong>
+                      Reorder quickly
+                    </strong>
+
+                    <p>
+                      Repeat your routine without
+                      starting again.
+                    </p>
                   </div>
 
                 </div>
@@ -556,54 +762,83 @@ export default function Home() {
           REVIEWS
       ===================================================== */}
 
-      <section className="section-pad bg-soft">
+      <section className="goo-review-section">
 
         <div className="container">
 
-          <div className="section-heading">
+          <div className="text-center goo-reveal">
 
-            <div>
+            <span className="goo-label">
 
-              <span className="eyebrow">
-                REVIEWS
-              </span>
+              FROM OUR CUSTOMERS
 
-              <h2>
-                What customers say
-              </h2>
+            </span>
 
-            </div>
+            <h2>
+
+              Loved by families.
+
+            </h2>
 
           </div>
 
-          <div className="row g-4">
 
-            {testimonials.map((t) => (
+          <div className="row g-4 mt-3">
 
-              <div
-                className="col-md-4"
-                key={t.name}
-              >
+            {testimonials.map(
+              (testimonial, index) => (
 
-                <div className="review-card">
+                <div
+                  className="col-md-4 goo-reveal"
+                  key={testimonial.name}
+                  style={{
+                    transitionDelay:
+                      `${index * 100}ms`,
+                  }}
+                >
 
-                  <div className="stars">
-                    ★★★★★
+                  <div className="goo-review-card">
+
+                    <div className="goo-stars">
+
+                      <FaStar />
+                      <FaStar />
+                      <FaStar />
+                      <FaStar />
+                      <FaStar />
+
+                    </div>
+
+                    <p>
+
+                      “{testimonial.text}”
+
+                    </p>
+
+                    <div className="goo-review-user">
+
+                      <div className="goo-avatar">
+
+                        {testimonial.name
+                          ?.charAt(0)
+                          ?.toUpperCase()}
+
+                      </div>
+
+                      <strong>
+
+                        {testimonial.name}
+
+                      </strong>
+
+                    </div>
+
                   </div>
-
-                  <p>
-                    “{t.text}”
-                  </p>
-
-                  <b>
-                    {t.name}
-                  </b>
 
                 </div>
 
-              </div>
-
-            ))}
+              )
+            )}
 
           </div>
 
@@ -616,69 +851,134 @@ export default function Home() {
           FAQ
       ===================================================== */}
 
-      <section className="section-pad">
+      <section className="goo-faq-section">
 
         <div className="container">
 
-          <div className="section-heading">
+          <div className="text-center goo-reveal">
 
-            <div>
+            <span className="goo-label">
 
-              <span className="eyebrow">
-                FAQ
-              </span>
+              FAQ
 
-              <h2>
-                Common questions
-              </h2>
+            </span>
 
-            </div>
+            <h2>
+
+              Everything made simple.
+
+            </h2>
 
           </div>
 
+
           <div
-            className="accordion"
-            id="faq"
+            className="accordion goo-faq"
+            id="gooFaq"
           >
 
-            {faqs.map(([q, a], i) => (
-
-              <div
-                className="accordion-item"
-                key={q}
-              >
-
-                <h2 className="accordion-header">
-
-                  <button
-                    className={`accordion-button ${
-                      i ? "collapsed" : ""
-                    }`}
-                    data-bs-toggle="collapse"
-                    data-bs-target={`#f${i}`}
-                  >
-                    {q}
-                  </button>
-
-                </h2>
+            {faqs.map(
+              ([question, answer], index) => (
 
                 <div
-                  id={`f${i}`}
-                  className={`accordion-collapse collapse ${
-                    i === 0 ? "show" : ""
-                  }`}
-                  data-bs-parent="#faq"
+                  className="accordion-item goo-reveal"
+                  key={question}
                 >
 
-                  <div className="accordion-body">
-                    {a}
+                  <h2 className="accordion-header">
+
+                    <button
+                      className={`accordion-button ${
+                        index
+                          ? "collapsed"
+                          : ""
+                      }`}
+                      data-bs-toggle="collapse"
+                      data-bs-target={`#gooFaq${index}`}
+                    >
+
+                      {question}
+
+                    </button>
+
+                  </h2>
+
+                  <div
+                    id={`gooFaq${index}`}
+                    className={`accordion-collapse collapse ${
+                      index === 0
+                        ? "show"
+                        : ""
+                    }`}
+                    data-bs-parent="#gooFaq"
+                  >
+
+                    <div className="accordion-body">
+
+                      {answer}
+
+                    </div>
+
                   </div>
 
                 </div>
 
-              </div>
+              )
+            )}
 
-            ))}
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* =====================================================
+          FINAL CTA
+      ===================================================== */}
+
+      <section className="goo-final-cta">
+
+        <div className="goo-cta-glow" />
+
+        <div className="container position-relative">
+
+          <div className="goo-final-content goo-reveal">
+
+            <span className="goo-pill">
+
+              <FaLeaf />
+
+              START FRESH
+
+            </span>
+
+            <h2>
+
+              Bring the farm
+              <br />
+
+              <span>closer to home.</span>
+
+            </h2>
+
+            <p>
+
+              Make your everyday milk routine
+              simpler with Goo Amrutham.
+
+            </p>
+
+            <Link
+              to="/products"
+              className="goo-primary-btn"
+            >
+
+              Start Ordering
+
+              <FaArrowRight />
+
+            </Link>
 
           </div>
 
@@ -687,5 +987,6 @@ export default function Home() {
       </section>
 
     </main>
+
   );
 }

@@ -8,6 +8,7 @@ import {
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import WhatsAppButton from "./components/WhatsAppButton";
+import BackButton from "./components/BackButton";
 
 import Home from "./pages/Home";
 import Products from "./pages/Products";
@@ -22,37 +23,64 @@ import Admin from "./pages/Admin";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Subscription from "./pages/Subscription";
+import SubscriptionDetails from "./pages/SubscriptionDetails";
 import ForgotPassword from "./pages/ForgotPassword";
 import UpdatePassword from "./pages/UpdatePassword";
-import BackButton from "./components/BackButton";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Navbar />
-      <BackButton/>
+
+      <BackButton />
 
       <Routes>
-        <Route path="/" element={<Home />} />
 
+        {/* Home */}
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+        {/* Products */}
         <Route
           path="/products"
           element={<Products />}
         />
 
+        {/* Cart */}
         <Route
           path="/cart"
           element={<Cart />}
         />
 
+        {/* Checkout */}
         <Route
           path="/checkout"
           element={<Checkout />}
         />
 
+        {/* Subscriptions */}
         <Route
           path="/subscriptions"
           element={<Subscription />}
+        />
+
+        {/* Subscription Details */}
+        <Route
+          path="/subscribe-details"
+          element={<SubscriptionDetails />}
+        />
+
+        {/* Authentication */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/register"
+          element={<Register />}
         />
 
         <Route
@@ -65,16 +93,7 @@ export default function App() {
           element={<UpdatePassword />}
         />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/register"
-          element={<Register />}
-        />
-
+        {/* Orders */}
         <Route
           path="/orders"
           element={<Orders />}
@@ -85,16 +104,19 @@ export default function App() {
           element={<OrderDetails />}
         />
 
+        {/* Profile */}
         <Route
           path="/profile"
           element={<Profile />}
         />
 
+        {/* Admin */}
         <Route
           path="/admin"
           element={<Admin />}
         />
 
+        {/* Static pages */}
         <Route
           path="/about"
           element={<About />}
@@ -104,6 +126,13 @@ export default function App() {
           path="/contact"
           element={<Contact />}
         />
+
+        {/* Fallback */}
+        <Route
+          path="*"
+          element={<Home />}
+        />
+
       </Routes>
 
       <WhatsAppButton />

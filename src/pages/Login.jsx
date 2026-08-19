@@ -1,1163 +1,391 @@
-import React, {
-    useEffect,
-    useState,
-} from "react";
-
-import {
-    Link,
-    useNavigate,
-} from "react-router-dom";
-
-import {
-    useApp,
-} from "../context/AppContext";
-
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash, FaArrowRight, FaShieldAlt } from "react-icons/fa";
+import { useApp } from "../context/AppContext";
 import logo from "../assets/images/logo.jpeg";
 
-
 export default function Login() {
+    const { login, supabaseConfigured } = useApp();
+    const navigate = useNavigate();
 
-    const {
-        login,
-        sendPhoneOtp,
-        verifyPhoneOtp,
-        resendPhoneOtp,
-        supabaseConfigured,
-    } = useApp();
-
-
-    const navigate =
-        useNavigate();
-
-
-    // =====================================================
-    // LOGIN METHOD
-    // =====================================================
-
-    const [
-        method,
-        setMethod,
-    ] = useState(
-        "email"
-    );
-
-
-    // =====================================================
-    // EMAIL
-    // =====================================================
-
-    const [
-        emailForm,
-        setEmailForm,
-    ] = useState({
-        email:
-            "",
-        password:
-            "",
+    const [form, setForm] = useState({
+        email: "",
+        password: "",
     });
 
+    const [showPassword, setShowPassword] = useState(false);
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState("");
 
-    // =====================================================
-    // PHONE
-    // =====================================================
+    const handleChange = (e) => {
+        const { name, value } = e.target;
 
-    const [
-        phone,
-        setPhone,
-    ] = useState(
-        ""
-    );
+        setForm((prev) => ({
+            ...prev,
+            [name]: value,
+        }));
 
+        if (error) {
+            setError("");
+        }
+    };
 
-    const [
-        otp,
-        setOtp,
-    ] = useState(
-        ""
-    );
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
+        setError("");
 
-    const [
-        phoneStep,
-        setPhoneStep,
-    ] = useState(
-        "phone"
-    );
+        if (!supabaseConfigured) {
+            setError(
+                "Login service is not configured. Please check your Supabase settings."
+            );
+            return;
+        }
 
+        if (!form.email.trim()) {
+            setError("Please enter your email address.");
+            return;
+        }
 
-    const [
-        countdown,
-        setCountdown,
-    ] = useState(
-        0
-    );
+        if (!form.password) {
+            setError("Please enter your password.");
+            return;
+        }
 
+        setBusy(true);
 
-    // =====================================================
-    // COMMON
-    // =====================================================
-
-    const [
-        error,
-        setError,
-    ] = useState(
-        ""
-    );
-
-
-    const [
-        message,
-        setMessage,
-    ] = useState(
-        ""
-    );
-
-
-    const [
-        busy,
-        setBusy,
-    ] = useState(
-        false
-    );
-
-
-    // =====================================================
-    // COUNTDOWN
-    // =====================================================
-
-    useEffect(
-        () => {
+        try {
+            const user = await login(
+                form.email.trim(),
+                form.password
+            );
 
             if (
-                countdown <= 0
+                user?.role === "admin" ||
+                user?.profile?.role === "admin"
             ) {
-
-                return;
-
+                navigate("/admin");
+            } else {
+                navigate("/");
             }
-
-
-            const timer =
-                setInterval(
-                    () => {
-
-                        setCountdown(
-                            (
-                                previous
-                            ) =>
-                                previous > 0
-                                    ? previous - 1
-                                    : 0
-                        );
-
-                    },
-                    1000
-                );
-
-
-            return () =>
-                clearInterval(
-                    timer
-                );
-
-        },
-        [
-            countdown,
-        ]
-    );
-
-
-    // =====================================================
-    // CLEAR
-    // =====================================================
-
-    const clearMessages =
-        () => {
+        } catch (err) {
+            console.error("Login error:", err);
 
             setError(
-                ""
+                err?.message ||
+                    "Unable to sign in. Please check your email and password."
             );
-
-            setMessage(
-                ""
-            );
-
-        };
-
-
-    // =====================================================
-    // EMAIL LOGIN
-    // =====================================================
-
-    const submitEmailLogin =
-        async (
-            e
-        ) => {
-
-            e.preventDefault();
-
-            clearMessages();
-
-            setBusy(
-                true
-            );
-
-
-            try {
-
-                const user =
-                    await login(
-                        emailForm.email,
-                        emailForm.password
-                    );
-
-
-                navigate(
-                    user?.role ===
-                        "admin"
-                        ? "/admin"
-                        : "/"
-                );
-
-            } catch (
-            error
-            ) {
-
-                setError(
-                    error?.message ||
-                    "Unable to sign in."
-                );
-
-            } finally {
-
-                setBusy(
-                    false
-                );
-
-            }
-
-        };
-
-
-    // =====================================================
-    // SEND OTP
-    // =====================================================
-
-    const sendPhoneOtpHandler =
-        async () => {
-
-            clearMessages();
-
-
-            const cleanPhone =
-                phone.replace(
-                    /\D/g,
-                    ""
-                );
-
-
-            if (
-                cleanPhone.length !==
-                10 ||
-                !/^[6-9]/.test(
-                    cleanPhone
-                )
-            ) {
-
-                setError(
-                    "Please enter a valid 10-digit Indian mobile number."
-                );
-
-                return;
-
-            }
-
-
-            setBusy(
-                true
-            );
-
-
-            try {
-
-                await sendPhoneOtp(
-                    cleanPhone
-                );
-
-
-                setPhone(
-                    cleanPhone
-                );
-
-                setOtp(
-                    ""
-                );
-
-                setPhoneStep(
-                    "otp"
-                );
-
-                setCountdown(
-                    60
-                );
-
-
-                setMessage(
-                    "OTP sent successfully. Please check your mobile."
-                );
-
-            } catch (
-            error
-            ) {
-
-                console.error(
-                    error
-                );
-
-
-                setError(
-                    error?.message ||
-                    "Unable to send OTP."
-                );
-
-            } finally {
-
-                setBusy(
-                    false
-                );
-
-            }
-
-        };
-
-
-    // =====================================================
-    // VERIFY OTP
-    // =====================================================
-
-    const verifyPhoneOtpHandler =
-        async () => {
-
-            clearMessages();
-
-
-            const cleanOtp =
-                otp.replace(
-                    /\D/g,
-                    ""
-                );
-
-
-            if (
-                cleanOtp.length !==
-                4
-            ) {
-
-                setError(
-                    "Please enter the 4-digit OTP."
-                );
-
-                return;
-
-            }
-
-
-            setBusy(
-                true
-            );
-
-
-            try {
-
-                const result =
-                    await verifyPhoneOtp(
-                        phone,
-                        cleanOtp
-                    );
-
-
-                /*
-                 * IMPORTANT
-                 *
-                 * MSG91 verification succeeded.
-                 *
-                 * However, MSG91 does not automatically
-                 * create a Supabase Auth session.
-                 */
-
-                if (
-                    result?.success
-                ) {
-
-                    setMessage(
-                        "Mobile number verified successfully."
-                    );
-
-
-                    /*
-                     * If a Supabase profile exists,
-                     * show the user that verification
-                     * succeeded but email/password
-                     * authentication is still required.
-                     */
-
-                    if (
-                        result?.profile
-                    ) {
-
-                        setTimeout(
-                            () => {
-
-                                setMessage(
-                                    "Mobile verified. Please sign in with your email and password to access your account."
-                                );
-
-                            },
-                            500
-                        );
-
-                    } else {
-
-                        setTimeout(
-                            () => {
-
-                                setMessage(
-                                    "Mobile verified successfully. Please create an account using this mobile number."
-                                );
-
-                            },
-                            500
-                        );
-
-                    }
-
-                }
-
-            } catch (
-            error
-            ) {
-
-                console.error(
-                    error
-                );
-
-
-                setError(
-                    error?.message ||
-                    "Invalid or expired OTP."
-                );
-
-            } finally {
-
-                setBusy(
-                    false
-                );
-
-            }
-
-        };
-
-
-    // =====================================================
-    // RESEND OTP
-    // =====================================================
-
-    const resendOtp =
-        async () => {
-
-            if (
-                countdown > 0
-            ) {
-
-                return;
-
-            }
-
-
-            clearMessages();
-
-            setOtp(
-                ""
-            );
-
-            setBusy(
-                true
-            );
-
-
-            try {
-
-                await resendPhoneOtp(
-                    phone
-                );
-
-
-                setCountdown(
-                    60
-                );
-
-
-                setMessage(
-                    "A new OTP has been sent."
-                );
-
-            } catch (
-            error
-            ) {
-
-                setError(
-                    error?.message ||
-                    "Unable to resend OTP."
-                );
-
-            } finally {
-
-                setBusy(
-                    false
-                );
-
-            }
-
-        };
-
-
-    // =====================================================
-    // CHANGE NUMBER
-    // =====================================================
-
-    const changePhone =
-        () => {
-
-            setPhoneStep(
-                "phone"
-            );
-
-            setOtp(
-                ""
-            );
-
-            setCountdown(
-                0
-            );
-
-            clearMessages();
-
-        };
-
-
-    // =====================================================
-    // SWITCH LOGIN
-    // =====================================================
-
-    const switchMethod =
-        (
-            newMethod
-        ) => {
-
-            setMethod(
-                newMethod
-            );
-
-            setPhoneStep(
-                "phone"
-            );
-
-            setOtp(
-                ""
-            );
-
-            setCountdown(
-                0
-            );
-
-            clearMessages();
-
-        };
-
-
-    // =====================================================
-    // OTP SCREEN
-    // =====================================================
-
-    if (
-        method === "phone" &&
-        phoneStep === "otp"
-    ) {
-
-        return (
-
-            <main className="auth-page">
-
-                <div className="auth-card">
-
-                    <img
-                        src={logo}
-                        className="auth-logo"
-                        alt="Goo Amrutham"
-                    />
-
-
-                    <span className="eyebrow">
-                        MOBILE VERIFICATION
-                    </span>
-
-
-                    <h1>
-                        Verify your number
-                    </h1>
-
-
-                    <p>
-                        Enter the 6-digit OTP
-                        sent to your mobile.
-                    </p>
-
-
-                    <div className="fw-bold text-success mb-3">
-
-                        +91 {phone}
-
-                    </div>
-
-
-                    {message && (
-
-                        <div className="alert alert-success">
-
-                            {message}
-
-                        </div>
-
-                    )}
-
-
-                    {error && (
-
-                        <div className="alert alert-danger">
-
-                            {error}
-
-                        </div>
-
-                    )}
-
-
-                    <label>
-
-                        Enter OTP
-
-                        <input
-                            type="text"
-                            className="form-control text-center"
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            maxLength={4}
-                            minLength={4}
-                            pattern="[0-9]{4}"
-                            placeholder="••••"
-                            value={otp}
-                            autoFocus
-                            onChange={(e) => {
-                                const value = e.target.value
-                                    .replace(/\D/g, "")
-                                    .slice(0, 4);
-
-                                setOtp(value);
-
-                                if (error) {
-                                    setError("");
-                                }
-                            }}
-                            onKeyDown={(e) => {
-                                if (
-                                    e.key === "Enter" &&
-                                    otp.length === 4 &&
-                                    !busy
-                                ) {
-                                    e.preventDefault();
-                                    verifyPhoneOtpHandler();
-                                }
-                            }}
-                            style={{
-                                fontSize: "24px",
-                                letterSpacing: "8px",
-                                textAlign: "center",
-                                marginTop: "6px",
-                                marginBottom: "16px",
-                            }}
-                        />
-
-                    </label>
-
-
-                    <button
-                        type="button"
-                        disabled={busy || otp.length !== 4}
-                        onClick={verifyPhoneOtpHandler}
-                        className="btn btn-success w-100 btn-lg rounded-pill"
-                    >
-                        {busy ? "Verifying..." : "Verify & Sign In"}
-                    </button>
-
-                    <button
-                        type="button"
-                        disabled={
-                            busy ||
-                            countdown >
-                            0
-                        }
-                        onClick={
-                            resendOtp
-                        }
-                        className="btn btn-outline-success w-100 rounded-pill mt-3"
-                    >
-
-                        {countdown >
-                            0
-                            ? `Resend OTP in ${countdown}s`
-                            : "Resend OTP"
-                        }
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        onClick={
-                            changePhone
-                        }
-                        className="btn btn-link text-success mt-2"
-                    >
-
-                        Change mobile number
-
-                    </button>
-
-
-                    <button
-                        type="button"
-                        onClick={() =>
-                            switchMethod(
-                                "email"
-                            )
-                        }
-                        className="btn btn-link text-secondary"
-                    >
-
-                        Sign in with email instead
-
-                    </button>
-
-                </div>
-
-            </main>
-
-        );
-
-    }
-
-
-    // =====================================================
-    // MAIN LOGIN
-    // =====================================================
+        } finally {
+            setBusy(false);
+        }
+    };
 
     return (
+        <main className="goo-login-page">
 
-        <main className="auth-page">
+            {/* Animated background */}
+            <div className="goo-login-bg">
+                <div className="goo-blob goo-blob-one" />
+                <div className="goo-blob goo-blob-two" />
+                <div className="goo-blob goo-blob-three" />
+            </div>
 
-            <div className="auth-card">
+            <div className="goo-login-container">
 
-                <img
-                    src={logo}
-                    className="auth-logo"
-                    alt="Goo Amrutham"
-                />
+                {/* =========================================
+                    LEFT BRAND PANEL
+                ========================================= */}
 
+                <section className="goo-login-brand">
 
-                <span className="eyebrow">
-                    WELCOME BACK
-                </span>
+                    <div className="goo-brand-glow" />
 
+                    <div className="goo-brand-content">
 
-                <h1>
-                    Sign in
-                </h1>
-
-
-                <p>
-                    Access your orders,
-                    live tracking and profile.
-                </p>
-
-
-                {!supabaseConfigured && (
-
-                    <div className="alert alert-warning">
-
-                        Supabase is not configured.
-
-                        <br />
-
-                        Check your
-                        <code>
-                            .env
-                        </code>
-                        file.
-
-                    </div>
-
-                )}
-
-
-                {error && (
-
-                    <div className="alert alert-danger">
-
-                        {error}
-
-                    </div>
-
-                )}
-
-
-                {message && (
-
-                    <div className="alert alert-success">
-
-                        {message}
-
-                    </div>
-
-                )}
-
-
-                {/* ================================================= */}
-                {/* EMAIL */}
-                {/* ================================================= */}
-
-                {method === "email" && (
-
-                    <form
-                        onSubmit={
-                            submitEmailLogin
-                        }
-                    >
-
-                        <label>
-
-                            Email
-
-                            <input
-                                type="email"
-                                className="form-control"
-                                required
-                                autoComplete="email"
-                                value={
-                                    emailForm.email
-                                }
-                                onChange={
-                                    (
-                                        e
-                                    ) =>
-                                        setEmailForm(
-                                            {
-                                                ...emailForm,
-
-                                                email:
-                                                    e.target.value,
-                                            }
-                                        )
-                                }
+                        <div className="goo-logo-wrapper">
+                            <img
+                                src={logo}
+                                alt="Goo Amrutham"
                             />
+                        </div>
 
-                        </label>
+                        <span className="goo-brand-badge">
+                            100% NATURAL • FARM FRESH
+                        </span>
 
+                        <h1>
+                            Welcome back to
+                            <span> Goo Amrutham</span>
+                        </h1>
 
-                        <label>
+                        <p>
+                            Fresh, natural goodness delivered
+                            straight from our fields to your home.
+                        </p>
 
-                            Password
+                        <div className="goo-brand-line" />
 
-                            <input
-                                type="password"
-                                className="form-control"
-                                required
-                                autoComplete="current-password"
-                                value={
-                                    emailForm.password
-                                }
-                                onChange={
-                                    (
-                                        e
-                                    ) =>
-                                        setEmailForm(
-                                            {
-                                                ...emailForm,
+                        <div className="goo-brand-points">
 
-                                                password:
-                                                    e.target.value,
-                                            }
-                                        )
-                                }
-                            />
+                            <div>
+                                <span>✓</span>
+                                Pure & Natural Milk
+                            </div>
 
-                        </label>
+                            <div>
+                                <span>✓</span>
+                                Fresh Farm-to-Home Delivery
+                            </div>
 
-
-                        <div className="text-end mb-3">
-
-                            <Link
-                                to="/forgot-password"
-                                className="text-success text-decoration-none fw-semibold"
-                            >
-                                Forgot Password?
-                            </Link>
+                            <div>
+                                <span>✓</span>
+                                Easy Subscription Management
+                            </div>
 
                         </div>
 
+                    </div>
 
-                        <button
-                            type="submit"
-                            disabled={
-                                busy ||
-                                !supabaseConfigured
-                            }
-                            className="btn btn-success w-100 btn-lg rounded-pill"
-                        >
+                </section>
 
-                            {busy
-                                ? "Signing in..."
-                                : "Sign In"
-                            }
+                {/* =========================================
+                    LOGIN CARD
+                ========================================= */}
 
-                        </button>
+                <section className="goo-login-section">
 
-                    </form>
+                    <div className="goo-login-card">
 
-                )}
+                        {/* Mobile logo */}
+                        <div className="goo-mobile-logo">
+                            <img
+                                src={logo}
+                                alt="Goo Amrutham"
+                            />
+                        </div>
 
+                        <div className="goo-login-header">
 
-                {/* ================================================= */}
-                {/* PHONE */}
-                {/* ================================================= */}
+                            <span className="goo-small-label">
+                                WELCOME BACK
+                            </span>
 
-                {method === "phone" && (
+                            <h2>
+                                Sign in
+                            </h2>
 
-                    <div>
+                            <p>
+                                Access your orders,
+                                subscriptions and account.
+                            </p>
 
-                        <label>
+                        </div>
 
-                            Mobile number
+                        {/* Error */}
+                        {error && (
+                            <div className="goo-login-error">
+                                <div className="goo-error-icon">
+                                    !
+                                </div>
 
-                            <div
-                                className="input-group"
-                                style={{
-                                    marginTop:
-                                        "6px",
+                                <div>
+                                    {error}
+                                </div>
+                            </div>
+                        )}
 
-                                    marginBottom:
-                                        "16px",
-                                }}
-                            >
+                        {!supabaseConfigured && (
+                            <div className="goo-login-warning">
+                                Login service is currently
+                                unavailable. Please check your
+                                Supabase configuration.
+                            </div>
+                        )}
 
-                                <span className="input-group-text">
-                                    +91
-                                </span>
+                        {/* =================================
+                            FORM
+                        ================================= */}
 
+                        <form onSubmit={handleSubmit}>
 
-                                <input
-                                    type="tel"
-                                    className="form-control"
-                                    maxLength="10"
-                                    inputMode="numeric"
-                                    autoComplete="tel"
-                                    placeholder="10-digit mobile number"
-                                    value={
-                                        phone
-                                    }
-                                    onChange={
-                                        (
-                                            e
-                                        ) => {
+                            {/* Email */}
 
-                                            setPhone(
-                                                e.target.value.replace(
-                                                    /\D/g,
-                                                    ""
-                                                )
-                                            );
+                            <div className="goo-field">
 
+                                <label htmlFor="email">
+                                    Email address
+                                </label>
 
-                                            if (
-                                                error
-                                            ) {
+                                <div className="goo-input-wrapper">
 
-                                                setError(
-                                                    ""
-                                                );
+                                    <span className="goo-input-icon">
+                                        @
+                                    </span>
 
-                                            }
+                                    <input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        value={form.email}
+                                        onChange={handleChange}
+                                        placeholder="you@example.com"
+                                        autoComplete="email"
+                                        disabled={busy}
+                                    />
 
-                                        }
-                                    }
-                                    onKeyDown={
-                                        (
-                                            e
-                                        ) => {
-
-                                            if (
-                                                e.key ===
-                                                "Enter" &&
-                                                phone.length ===
-                                                10
-                                            ) {
-
-                                                e.preventDefault();
-
-                                                sendPhoneOtpHandler();
-
-                                            }
-
-                                        }
-                                    }
-                                />
+                                </div>
 
                             </div>
 
-                        </label>
+                            {/* Password */}
 
+                            <div className="goo-field">
 
-                        <button
-                            type="button"
-                            disabled={
-                                busy ||
-                                !supabaseConfigured ||
-                                phone.length !==
-                                10
-                            }
-                            onClick={
-                                sendPhoneOtpHandler
-                            }
-                            className="btn btn-success w-100 btn-lg rounded-pill"
+                                <div className="goo-password-label">
+
+                                    <label htmlFor="password">
+                                        Password
+                                    </label>
+
+                                    <Link
+                                        to="/forgot-password"
+                                        className="goo-forgot"
+                                    >
+                                        Forgot password?
+                                    </Link>
+
+                                </div>
+
+                                <div className="goo-input-wrapper">
+
+                                    <span className="goo-input-icon">
+                                        •
+                                    </span>
+
+                                    <input
+                                        id="password"
+                                        name="password"
+                                        type={
+                                            showPassword
+                                                ? "text"
+                                                : "password"
+                                        }
+                                        value={form.password}
+                                        onChange={handleChange}
+                                        placeholder="Enter your password"
+                                        autoComplete="current-password"
+                                        disabled={busy}
+                                    />
+
+                                    <button
+                                        type="button"
+                                        className="goo-password-toggle"
+                                        onClick={() =>
+                                            setShowPassword(
+                                                (prev) => !prev
+                                            )
+                                        }
+                                        aria-label={
+                                            showPassword
+                                                ? "Hide password"
+                                                : "Show password"
+                                        }
+                                    >
+                                        {showPassword ? (
+                                            <FaEyeSlash />
+                                        ) : (
+                                            <FaEye />
+                                        )}
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                            {/* Remember */}
+
+                            <div className="goo-login-options">
+
+                                <label className="goo-checkbox">
+
+                                    <input type="checkbox" />
+
+                                    <span>
+                                        Remember me
+                                    </span>
+
+                                </label>
+
+                            </div>
+
+                            {/* Submit */}
+
+                            <button
+                                type="submit"
+                                disabled={
+                                    busy ||
+                                    !supabaseConfigured
+                                }
+                                className="goo-login-button"
+                            >
+
+                                {busy ? (
+                                    <>
+                                        <span className="goo-spinner" />
+                                        Signing in...
+                                    </>
+                                ) : (
+                                    <>
+                                        Sign in
+                                        <FaArrowRight />
+                                    </>
+                                )}
+
+                            </button>
+
+                        </form>
+
+                        {/* Security */}
+
+                        <div className="goo-security">
+
+                            <FaShieldAlt />
+
+                            <span>
+                                Your account information is securely
+                                protected.
+                            </span>
+
+                        </div>
+
+                        {/* Divider */}
+
+                        <div className="goo-divider">
+                            <span>NEW TO GOO AMRUTHAM?</span>
+                        </div>
+
+                        {/* Register */}
+
+                        <Link
+                            to="/register"
+                            className="goo-create-account"
                         >
+                            Create an account
+                            <FaArrowRight />
+                        </Link>
 
-                            {busy
-                                ? "Sending OTP..."
-                                : "Send OTP"
-                            }
+                        {/* Footer */}
 
-                        </button>
-
-
-                        <p className="text-muted small mt-3 mb-0">
-
-                            We'll send a real
-                            verification OTP
-                            to your Indian
-                            mobile number.
-
+                        <p className="goo-login-footer">
+                            From our fields to your home 🥛
                         </p>
 
                     </div>
 
-                )}
-
-
-                {/* ================================================= */}
-                {/* SWITCH */}
-                {/* ================================================= */}
-
-                <div className="mt-4">
-
-                    {method === "email"
-                        ? (
-
-                            <button
-                                type="button"
-                                className="btn btn-outline-success w-100 rounded-pill"
-                                onClick={() =>
-                                    switchMethod(
-                                        "phone"
-                                    )
-                                }
-                            >
-
-                                📱 Sign in with
-                                Mobile Number
-
-                            </button>
-
-                        )
-                        : (
-
-                            <button
-                                type="button"
-                                className="btn btn-outline-success w-100 rounded-pill"
-                                onClick={() =>
-                                    switchMethod(
-                                        "email"
-                                    )
-                                }
-                            >
-
-                                ✉️ Sign in with
-                                Email & Password
-
-                            </button>
-
-                        )}
-
-                </div>
-
-
-                {/* ================================================= */}
-                {/* GOOGLE */}
-                {/* ================================================= */}
-
-                <div className="my-4 d-flex align-items-center">
-
-                    <div className="flex-grow-1 border-top" />
-
-                    <span className="mx-3 text-muted small">
-                        OR
-                    </span>
-
-                    <div className="flex-grow-1 border-top" />
-
-                </div>
-
-
-                <button
-                    type="button"
-                    disabled
-                    className="btn btn-light border w-100 btn-lg rounded-pill"
-                >
-
-                    Continue with Google
-
-                </button>
-
-
-                {/* ================================================= */}
-                {/* REGISTER */}
-                {/* ================================================= */}
-
-                <p className="small mt-4 mb-0">
-
-                    New customer?{" "}
-
-                    <Link to="/register">
-
-                        Create an account
-
-                    </Link>
-
-                </p>
+                </section>
 
             </div>
 
         </main>
-
     );
-    
-
 }

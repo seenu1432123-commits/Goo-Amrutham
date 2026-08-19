@@ -307,6 +307,54 @@ export default function Admin() {
     if (currentUser?.role === "admin") loadSubscriptions();
   }, [currentUser?.role]);
 
+  useEffect(() => {
+  if (currentUser?.role !== "admin") return;
+
+  const channel = supabase
+    .channel("admin-subscriptions-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "subscriptions",
+      },
+      (payload) => {
+        console.log("Admin subscription realtime:", payload);
+
+        if (payload.eventType === "UPDATE") {
+          setSubscriptions((previous) =>
+            previous.map((subscription) =>
+              subscription.id === payload.new.id
+                ? { ...subscription, ...payload.new }
+                : subscription
+            )
+          );
+        }
+
+        if (payload.eventType === "INSERT") {
+          setSubscriptions((previous) => [
+            payload.new,
+            ...previous,
+          ]);
+        }
+
+        if (payload.eventType === "DELETE") {
+          setSubscriptions((previous) =>
+            previous.filter(
+              (subscription) => subscription.id !== payload.old.id
+            )
+          );
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [currentUser?.role]);
+
   const showSuccess = (message, duration = 3000) => {
     setSuccess(message);
     window.setTimeout(() => setSuccess(""), duration);
@@ -379,30 +427,41 @@ export default function Admin() {
     }
   };
 
-  const updateSubscriptionStatus = async (id, status) => {
-    try {
-      setErr("");
+ const updateSubscriptionStatus = async (id, status) => {
+  try {
+    setErr("");
 
-      const { error } = await supabase
-        .from("subscriptions")
-        .update({
-          status,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", id);
+    const { data, error } = await supabase
+      .from("subscriptions")
+      .update({
+        status,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
 
-      if (error) throw error;
+    if (error) throw error;
 
-      setSubscriptions((previous) =>
-        previous.map((s) => (s.id === id ? { ...s, status } : s))
-      );
+    // Immediately update Admin page
+    setSubscriptions((previous) =>
+      previous.map((s) =>
+        s.id === id
+          ? {
+              ...s,
+              ...data,
+              status,
+            }
+          : s
+      )
+    );
 
-      showSuccess(`Subscription ${status.toLowerCase()}.`);
-    } catch (error) {
-      console.error(error);
-      setErr(error?.message || "Unable to update subscription.");
-    }
-  };
+    showSuccess(`Subscription ${status.toLowerCase()}.`);
+  } catch (error) {
+    console.error("Subscription update error:", error);
+    setErr(error?.message || "Unable to update subscription.");
+  }
+};
 
   const refreshAll = async () => {
     try {
